@@ -23,11 +23,15 @@ jobs:
             label: Windows (x64)
             arch: ""
             artifact: Hapax-Finder-Windows
-          - os: macos-14         # Apple silicon runner
+          - os: macos-14         # Apple silicon runner (macos-15 also works)
             label: macOS (Apple Silicon)
             arch: arm64
             artifact: Hapax-Finder-macOS-AppleSilicon
-          - os: macos-13         # Intel runner
+          # macos-13 was retired on 4 December 2025; macos-15-intel is the
+          # replacement x86_64 label. Asking for a label that no longer exists
+          # makes the job queue forever rather than fail, so it is worth
+          # checking this one when a build never starts.
+          - os: macos-15-intel   # Intel runner
             label: macOS (Intel)
             arch: x86_64
             artifact: Hapax-Finder-macOS-Intel
