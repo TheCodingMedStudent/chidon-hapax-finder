@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# PyInstaller
+build/
+dist/
+*.manifest
+
+# OS noise
+.DS_Store
+Thumbs.db
+
+# Generated reports — yours, not the repo's
+*.pdf
+*.csv
