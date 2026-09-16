@@ -12,7 +12,7 @@ from PyQt6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog,
                              QFileDialog, QFormLayout, QGroupBox, QHBoxLayout,
                              QHeaderView, QLabel, QLineEdit, QMessageBox,
                              QPlainTextEdit, QProgressBar, QPushButton,
-                             QRadioButton, QSpinBox, QSplitter, QTableWidget,
+                             QRadioButton, QSpinBox, QScrollArea, QSplitter, QTableWidget,
                              QTableWidgetItem, QTabWidget, QTextBrowser,
                              QVBoxLayout, QWidget)
 
@@ -256,17 +256,16 @@ class MainWindow(QWidget):
         root.addWidget(split, 1)
 
         # ---- left: syllabus + options -----------------------------------
-        left = QWidget()
-        lv = QVBoxLayout(left)
+        left_inner = QWidget()
+        lv = QVBoxLayout(left_inner)
         lv.setContentsMargins(0, 0, 6, 0)
-        lv.setSpacing(10)
+        lv.setSpacing(8)
 
         self.syllabus_box = QGroupBox()
         gv = QVBoxLayout(self.syllabus_box)
-        gv.setContentsMargins(12, 16, 12, 12)
-        gv.setSpacing(8)
+        gv.setContentsMargins(12, 14, 12, 10)
+        gv.setSpacing(6)
         self.syllabus_edit = QPlainTextEdit()
-        self.syllabus_edit.setMinimumHeight(170)
         self.syllabus_edit.textChanged.connect(self.validate_syllabus)
         gv.addWidget(self.syllabus_edit, 1)
 
@@ -298,8 +297,8 @@ class MainWindow(QWidget):
 
         self.options_box = QGroupBox()
         of = QFormLayout(self.options_box)
-        of.setContentsMargins(12, 16, 12, 12)
-        of.setSpacing(8)
+        of.setContentsMargins(12, 14, 12, 10)
+        of.setSpacing(6)
         self.scope_combo = QComboBox()
         self.scope_combo.setMinimumWidth(300)
         for key in ("tanach", "syllabus", "book", "section", "custom"):
@@ -359,8 +358,8 @@ class MainWindow(QWidget):
 
         self.report_box = QGroupBox()
         rf = QFormLayout(self.report_box)
-        rf.setContentsMargins(12, 16, 12, 12)
-        rf.setSpacing(8)
+        rf.setContentsMargins(12, 14, 12, 10)
+        rf.setSpacing(6)
         self.title_edit = QLineEdit()
         self.title_label = QLabel()
         rf.addRow(self.title_label, self.title_edit)
@@ -380,6 +379,7 @@ class MainWindow(QWidget):
         for w in (self.verses_cb, self.index_cb, self.practice_cb, self.hebnum_cb):
             rf.addRow(w)
         lv.addWidget(self.report_box)
+        lv.addStretch(1)          # maximising must not distort the panels
 
         run_row = QHBoxLayout()
         self.run_btn = QPushButton()
@@ -412,6 +412,12 @@ class MainWindow(QWidget):
         self.status.setObjectName("Status")
         self.status.setWordWrap(True)
         lv.addWidget(self.status)
+        left = QScrollArea()
+        left.setWidget(left_inner)
+        left.setWidgetResizable(True)
+        left.setFrameShape(QScrollArea.Shape.NoFrame)
+        left.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         split.addWidget(left)
 
         # ---- right: results + roots -------------------------------------
@@ -589,7 +595,9 @@ class MainWindow(QWidget):
             if button.objectName() in ("Info", "Help"):
                 continue                       # round / pill shaped, sized already
             button.setMinimumHeight(line + 18)
-        self.syllabus_edit.setMinimumHeight(max(170, line * 8))
+        # floor: four lines, so a short window can still shrink it
+        # ceiling: fourteen, so maximising does not stretch it out of shape
+        self.syllabus_edit.setMinimumHeight(line * 4)
         self.syllabus_edit.setMaximumHeight(line * 14)
 
         # a combo must fit its longest entry plus the arrow, or the text is
@@ -602,8 +610,12 @@ class MainWindow(QWidget):
 
         # and the settings panel must be wide enough for whatever that came to
         left = self.split.widget(0)
-        if left is not None:
-            want = max(470, left.sizeHint().width() + 24)
+        if isinstance(left, QScrollArea) and left.widget() is not None:
+            inner = left.widget()
+        else:
+            inner = left
+        if inner is not None:
+            want = max(470, inner.sizeHint().width() + 24)
             total = max(self.width(), want + 520)
             self.split.setSizes([want, total - want])
 
@@ -1093,6 +1105,13 @@ def main():
     app.setWindowIcon(app_icon())
     app.setStyleSheet(load_stylesheet())
     w = MainWindow()
+    screen = app.primaryScreen()
+    if screen is not None:
+        # leave room for the taskbar / dock: availableGeometry excludes it
+        avail = screen.availableGeometry()
+        w.resize(min(1280, int(avail.width() * 0.94)),
+                 min(940, int(avail.height() * 0.92)))
+        w.move(avail.center() - w.rect().center())
     if is_rtl():
         app.setLayoutDirection(Qt.LayoutDirection.RightToLeft)
     w.show()
