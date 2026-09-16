@@ -862,4 +862,28 @@ S = STRINGS = {
         "pt": "Mostrar isto ao iniciar o programa",
         "ru": "Показывать при запуске программы",
     },
+    "opt.wholeTanach": {
+        "en": "Whole Tanach", "he": "כל התנ״ך", "fr": "Tout le Tanakh",
+        "es": "Todo el Tanaj", "pt": "Todo o Tanach", "ru": "Весь Танах",
+    },
+    "tip.wholeTanach": {
+        "en": "Fill the syllabus with all 39 books — 23,213 verses. Searching "
+              "the whole Tanach takes a few seconds longer than a normal "
+              "syllabus. Unticking restores what you had typed.",
+        "he": "ממלא את חומר הבחינה בכל 39 הספרים — 23,213 פסוקים. חיפוש בכל "
+              "התנ״ך אורך כמה שניות יותר מחומר רגיל. ביטול הסימון מחזיר את מה "
+              "שהוקלד קודם.",
+        "fr": "Remplit le programme avec les 39 livres — 23 213 versets. La "
+              "recherche sur tout le Tanakh prend quelques secondes de plus. "
+              "Décocher rétablit ce que vous aviez saisi.",
+        "es": "Rellena el temario con los 39 libros — 23.213 versículos. Buscar "
+              "en todo el Tanaj tarda unos segundos más. Al desmarcar se "
+              "recupera lo que había escrito.",
+        "pt": "Preenche o programa com os 39 livros — 23 213 versículos. "
+              "Pesquisar todo o Tanach demora alguns segundos mais. Desmarcar "
+              "repõe o que tinha escrito.",
+        "ru": "Заполняет материал всеми 39 книгами — 23 213 стихов. Поиск по "
+              "всему Танаху занимает на несколько секунд больше. Снятие флажка "
+              "возвращает то, что было введено.",
+    },
 }

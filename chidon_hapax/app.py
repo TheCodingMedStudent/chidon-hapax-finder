@@ -16,7 +16,7 @@ from PyQt6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog,
                              QTableWidgetItem, QTabWidget, QTextBrowser,
                              QVBoxLayout, QWidget)
 
-from . import help_text, paths, sections
+from . import book_names, help_text, paths, sections
 from . import (BSD, __author__, __license__, __url__, __version__,
                __year__, numbering, report)
 from .corpus import (USER_CORPUS_PATH, LEVELS, Corpus, corpus_exists,
@@ -280,6 +280,10 @@ class MainWindow(QWidget):
         gv.addLayout(add)
 
         io_row = QHBoxLayout()
+        self.whole_cb = QCheckBox()
+        self.whole_cb.toggled.connect(self.toggle_whole_tanach)
+        gv.addWidget(self.whole_cb)
+
         self.open_btn = QPushButton()
         self.open_btn.clicked.connect(self.open_syllabus)
         self.save_btn = QPushButton()
@@ -515,6 +519,21 @@ class MainWindow(QWidget):
         if self.root_rows:
             self.search_root()
 
+    def toggle_whole_tanach(self, on: bool):
+        """Fill the syllabus with every book, or put back what was there."""
+        if on:
+            self._saved_syllabus = self.syllabus_edit.toPlainText()
+            self.syllabus_edit.setPlainText(
+                "\n".join(b["he"] for b in self.corpus.books))
+        else:
+            self.syllabus_edit.setPlainText(
+                getattr(self, "_saved_syllabus", ""))
+        self.syllabus_edit.setReadOnly(on)
+        for widget in (self.book_combo, self.chapters_edit, self.add_btn,
+                       self.open_btn):
+            widget.setEnabled(not on)
+        self.validate_syllabus()
+
     def update_scope_widgets(self):
         scope = self.scope_combo.currentData()
         self.section_combo.setVisible(scope == "section")
@@ -648,6 +667,17 @@ class MainWindow(QWidget):
         for i in range(self.scope_combo.count()):
             self.scope_combo.setItemText(i, tr(f"scope.{self.scope_combo.itemData(i)}"))
         self.scope_edit.setPlaceholderText(tr("ph.scopeCustom"))
+        self.whole_cb.setText(tr("opt.wholeTanach"))
+        self.whole_cb.setToolTip(tr("tip.wholeTanach"))
+        for i in range(self.book_combo.count()):
+            data = self.book_combo.itemData(i)
+            if not data:
+                continue
+            if data[0] == "section":
+                self.book_combo.setItemText(i, "◆  " + sections.label(data[1]))
+            elif data[0] == "book" and self.corpus is not None:
+                self.book_combo.setItemText(
+                    i, self.book_label(self.corpus.books[data[1]]))
         self.scope_part.setText(tr("opt.scopeInSyllabus"))
         self.scope_part.setToolTip(tr("tip.scopeInSyllabus"))
         self.update_scope_widgets()
@@ -697,8 +727,7 @@ class MainWindow(QWidget):
                 words=f"{self.corpus.total_words():,}"))
             self.corpus_btn.setVisible(False)
             if self.book_combo.count() == 0:
-                for i, b in enumerate(self.corpus.books):
-                    self.book_combo.addItem(f"{b['he']}  ·  {b['en']}", i)
+                self.fill_book_combo()
         elif corpus_exists():
             self.corpus_label.setText(tr("corpus.loading"))
             try:
@@ -744,15 +773,60 @@ class MainWindow(QWidget):
                     pass
                 break
 
+    def fill_book_combo(self):
+        """Whole Tanach and the standard sections, then the 39 books.
+
+        Putting them in the same picker means "give me all of Nevi'im" is one
+        click rather than eleven lines typed by hand.
+        """
+        self.book_combo.clear()
+        for key in sections.ORDER:
+            self.book_combo.addItem("◆  " + sections.label(key),
+                                    ("section", key))
+        self.book_combo.insertSeparator(self.book_combo.count())
+        for i, b in enumerate(self.corpus.books):
+            self.book_combo.addItem(self.book_label(b), ("book", i))
+        self.book_combo.currentIndexChanged.connect(self.update_chapters_field)
+        self.update_chapters_field()
+
+    def book_label(self, b: dict) -> str:
+        """Hebrew name plus the name in the interface language.
+
+        In Hebrew there is nothing to add, so the Hebrew name stands alone.
+        """
+        lang = current_language()
+        if lang == "he":
+            return b["he"]
+        return f"{b['he']}  ·  {book_names.name(b['osis'], lang, b['en'])}"
+
+    def update_chapters_field(self):
+        """Chapter numbers only make sense for a single book."""
+        data = self.book_combo.currentData()
+        single = bool(data) and data[0] == "book"
+        self.chapters_edit.setEnabled(single)
+        if not single:
+            self.chapters_edit.clear()
+
     def add_book_line(self):
         if self.corpus is None or self.book_combo.currentIndex() < 0:
             return
-        line = self.corpus.book_he(self.book_combo.currentData())
-        ch = self.chapters_edit.text().strip()
-        if ch:
-            line += " " + ch
+        data = self.book_combo.currentData()
+        if not data:
+            return
+        kind, value = data
+        if kind == "book":
+            line = self.corpus.book_he(value)
+            ch = self.chapters_edit.text().strip()
+            if ch:
+                line += " " + ch
+            lines = [line]
+        elif kind == "section":
+            books = sections.book_indexes(self.corpus, value)
+            lines = [self.corpus.book_he(i)
+                     for i in range(len(self.corpus.books)) if i in books]
         text = self.syllabus_edit.toPlainText().rstrip()
-        self.syllabus_edit.setPlainText((text + "\n" + line).strip() + "\n")
+        self.syllabus_edit.setPlainText(
+            (text + "\n" + "\n".join(lines)).strip() + "\n")
         self.chapters_edit.clear()
 
     def open_syllabus(self):
@@ -808,7 +882,7 @@ class MainWindow(QWidget):
             bits.append(f"<span style='color:#b3261e'>⚠ {e}</span>")
         if syl.ignored:
             shown = " / ".join(syl.ignored[:2])
-            bits.append("<span style='color:#8a8681'>"
+            bits.append("<span style='color:#b0743a'>⚠ "
                         + tr("syl.skipped", n=len(syl.ignored), lines=shown)
                         + "</span>")
         self.syllabus_status.setText("<br>".join(bits))

@@ -138,6 +138,10 @@ Your friends then download from the Releases page:
 Unsure which Mac they have:  → About This Mac. "Apple M1" or later means
 Apple Silicon; "Intel" means Intel.
 
+Send them the "Installing it" section of the README along with the link — both
+systems warn about unsigned apps, and on macOS the dialog has no visible way
+forward, so people give up unless told what to do.
+
 ## 6. Changing something later
 
 ```

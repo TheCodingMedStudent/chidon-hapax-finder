@@ -112,6 +112,16 @@ syllabus) and the name שָׁפָט (8 / 5), listed separately.
 
 ---
 
+### The whole Tanach in one tick
+
+A **Whole Tanach** checkbox under the syllabus box fills it with all 39 books —
+929 chapters, 23,213 verses — without typing anything. Unticking restores
+whatever you had before, so it costs nothing to try.
+
+Searching everything is heavier than a normal syllabus but still quick: single
+words take about 3 seconds, all five phrase lengths about 6, peaking around
+340 MB. Every word in the Tanach that occurs exactly once: 20,480 of them.
+
 ## Unique **within what?** — five answers
 
 The single most useful setting. A word can be unique in one span of text and
