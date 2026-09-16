@@ -121,7 +121,8 @@ def build_html(corpus: Corpus, result: Result, syllabus_label: str,
     scope_en = tr(f"scope.{o.scope}")
     if o.scope == "section":
         from . import sections as _sec
-        scope_en = _sec.label(o.scope_section)
+        from .i18n import current_language as _lang
+        scope_en = _sec.label(o.scope_section, _lang())
     level_he = {"root": "שורש / ערך מילוני",
                 "consonantal": "כתיב בלבד (ללא ניקוד)",
                 "vocalized": "כתיב וניקוד",

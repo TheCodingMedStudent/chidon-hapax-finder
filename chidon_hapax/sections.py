@@ -31,10 +31,56 @@ SECTIONS = {
 ORDER = ["torah", "neviim", "neviim_rishonim", "neviim_acharonim", "trei_asar",
          "ketuvim", "emet", "megillot"]
 
+#: the section names per interface language. Transliterations are what a
+#: Chidon participant says out loud, so they are kept even where a translated
+#: form exists — except in Russian, where the Cyrillic form is what reads.
+LOCAL = {
+    "en": {"torah": "Torah", "neviim": "Nevi'im",
+           "neviim_rishonim": "Nevi'im Rishonim",
+           "neviim_acharonim": "Nevi'im Acharonim", "trei_asar": "Trei Asar",
+           "ketuvim": "Ketuvim", "emet": "Sifrei Emet",
+           "megillot": "The Five Megillot"},
+    "fr": {"torah": "Torah (Pentateuque)", "neviim": "Nevi'im (Prophètes)",
+           "neviim_rishonim": "Nevi'im Rishonim",
+           "neviim_acharonim": "Nevi'im Acharonim", "trei_asar": "Trei Asar",
+           "ketuvim": "Ketouvim (Écrits)", "emet": "Sifrei Emet",
+           "megillot": "Cinq Meguilot"},
+    "es": {"torah": "Torá (Pentateuco)", "neviim": "Nevi'im (Profetas)",
+           "neviim_rishonim": "Nevi'im Rishonim",
+           "neviim_acharonim": "Nevi'im Acharonim", "trei_asar": "Trei Asar",
+           "ketuvim": "Ketuvim (Escritos)", "emet": "Sifrei Emet",
+           "megillot": "Cinco Meguilot"},
+    "pt": {"torah": "Torá (Pentateuco)", "neviim": "Nevi'im (Profetas)",
+           "neviim_rishonim": "Nevi'im Rishonim",
+           "neviim_acharonim": "Nevi'im Acharonim", "trei_asar": "Trei Asar",
+           "ketuvim": "Ketuvim (Escritos)", "emet": "Sifrei Emet",
+           "megillot": "Cinco Meguilot"},
+    "ru": {"torah": "Тора (Пятикнижие)", "neviim": "Невиим (Пророки)",
+           "neviim_rishonim": "Невиим Ришоним", "neviim_acharonim":
+           "Невиим Ахароним", "trei_asar": "Трей Асар",
+           "ketuvim": "Ктувим (Писания)", "emet": "Сифрей Эмет",
+           "megillot": "Пять свитков"},
+}
 
-def label(key: str) -> str:
+
+#: Unicode isolates. Without them a Latin or Cyrillic name that begins or ends
+#: with a digit — "1 Самуила" — gets its digit dragged to the wrong end when it
+#: sits beside Hebrew, because the whole line is laid out right-to-left.
+RLI, LRI, PDI = "\u2067", "\u2066", "\u2069"
+
+
+def bidi(hebrew: str, other: str) -> str:
+    """Hebrew and a Latin/Cyrillic name side by side, each laid out properly."""
+    if not other:
+        return hebrew
+    return f"{RLI}{hebrew}{PDI}  ·  {LRI}{other}{PDI}"
+
+
+def label(key: str, lang: str = "en") -> str:
     he, en, _ = SECTIONS[key]
-    return f"{he} · {en}"
+    if lang == "he":
+        return he
+    return bidi(he, LOCAL.get(lang, LOCAL["en"]).get(key, en))
 
 
 def hebrew(key: str) -> str:

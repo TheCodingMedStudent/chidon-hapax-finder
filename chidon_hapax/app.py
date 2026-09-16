@@ -314,7 +314,7 @@ class MainWindow(QWidget):
         self.section_combo = QComboBox()
         self.section_combo.setMinimumWidth(300)
         for key in sections.ORDER:
-            self.section_combo.addItem(sections.label(key), key)
+            self.section_combo.addItem(sections.label(key, "en"), key)
         self.section_combo.setCurrentIndex(sections.ORDER.index("neviim_rishonim"))
         of.addRow("", self.section_combo)
 
@@ -666,6 +666,10 @@ class MainWindow(QWidget):
         self.scope_combo.setToolTip(tr("tip.scope"))
         for i in range(self.scope_combo.count()):
             self.scope_combo.setItemText(i, tr(f"scope.{self.scope_combo.itemData(i)}"))
+        for i in range(self.section_combo.count()):
+            self.section_combo.setItemText(
+                i, sections.label(self.section_combo.itemData(i),
+                                  current_language()))
         self.scope_edit.setPlaceholderText(tr("ph.scopeCustom"))
         self.whole_cb.setText(tr("opt.wholeTanach"))
         self.whole_cb.setToolTip(tr("tip.wholeTanach"))
@@ -674,7 +678,8 @@ class MainWindow(QWidget):
             if not data:
                 continue
             if data[0] == "section":
-                self.book_combo.setItemText(i, "◆  " + sections.label(data[1]))
+                self.book_combo.setItemText(
+                    i, "◆  " + sections.label(data[1], current_language()))
             elif data[0] == "book" and self.corpus is not None:
                 self.book_combo.setItemText(
                     i, self.book_label(self.corpus.books[data[1]]))
@@ -781,7 +786,7 @@ class MainWindow(QWidget):
         """
         self.book_combo.clear()
         for key in sections.ORDER:
-            self.book_combo.addItem("◆  " + sections.label(key),
+            self.book_combo.addItem("◆  " + sections.label(key, current_language()),
                                     ("section", key))
         self.book_combo.insertSeparator(self.book_combo.count())
         for i, b in enumerate(self.corpus.books):
@@ -797,7 +802,8 @@ class MainWindow(QWidget):
         lang = current_language()
         if lang == "he":
             return b["he"]
-        return f"{b['he']}  ·  {book_names.name(b['osis'], lang, b['en'])}"
+        return sections.bidi(b["he"],
+                             book_names.name(b["osis"], lang, b["en"]))
 
     def update_chapters_field(self):
         """Chapter numbers only make sense for a single book."""
@@ -922,7 +928,7 @@ class MainWindow(QWidget):
         if opts.scope == "section":
             books = sections.book_indexes(self.corpus, opts.scope_section)
             inside = any(v.book in books for v in verses)
-            where = sections.label(opts.scope_section)
+            where = sections.label(opts.scope_section, current_language())
         elif opts.scope == "custom":
             inside = any(v.idx in scope_verses for v in verses)
             where = self.scope_edit.text().strip()
