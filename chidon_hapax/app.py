@@ -252,7 +252,7 @@ class MainWindow(QWidget):
         bar.addWidget(self.corpus_btn)
         root.addLayout(bar)
 
-        split = QSplitter(Qt.Orientation.Horizontal)
+        self.split = split = QSplitter(Qt.Orientation.Horizontal)
         root.addWidget(split, 1)
 
         # ---- left: syllabus + options -----------------------------------
@@ -263,6 +263,8 @@ class MainWindow(QWidget):
 
         self.syllabus_box = QGroupBox()
         gv = QVBoxLayout(self.syllabus_box)
+        gv.setContentsMargins(12, 16, 12, 12)
+        gv.setSpacing(8)
         self.syllabus_edit = QPlainTextEdit()
         self.syllabus_edit.setMinimumHeight(170)
         self.syllabus_edit.textChanged.connect(self.validate_syllabus)
@@ -296,6 +298,7 @@ class MainWindow(QWidget):
 
         self.options_box = QGroupBox()
         of = QFormLayout(self.options_box)
+        of.setContentsMargins(12, 16, 12, 12)
         of.setSpacing(8)
         self.scope_combo = QComboBox()
         self.scope_combo.setMinimumWidth(300)
@@ -356,6 +359,7 @@ class MainWindow(QWidget):
 
         self.report_box = QGroupBox()
         rf = QFormLayout(self.report_box)
+        rf.setContentsMargins(12, 16, 12, 12)
         rf.setSpacing(8)
         self.title_edit = QLineEdit()
         self.title_label = QLabel()
@@ -429,6 +433,13 @@ class MainWindow(QWidget):
             t.itemSelectionChanged.connect(self.show_detail)
             t.setFont(hf)
             t.horizontalHeader().setStretchLastSection(False)
+            # sensible widths before any results exist, so the header is not
+            # cut off on a fresh window
+            hh0 = t.horizontalHeader()
+            hh0.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+            for col in range(1, 5):
+                hh0.setSectionResizeMode(col,
+                                         QHeaderView.ResizeMode.ResizeToContents)
             self.tables[n] = t
             self.tabs.addTab(t, "")
         self.roots_tab = self._build_roots_tab()
@@ -442,12 +453,13 @@ class MainWindow(QWidget):
         self.detail.document().setDefaultTextOption(opt)
         rv.addWidget(self.detail, 1)
         split.addWidget(right)
-        split.setSizes([470, 770])
+        split.setSizes([470, 770])   # refined in fit_controls_to_font()
         self.setAcceptDrops(True)
 
         self.numbering_combo.setCurrentIndex(
             numbering.SCHEMES.index(numbering.scheme()))
         self.retranslate()
+        self.fit_controls_to_font()
         self.refresh_corpus_state()
         self.validate_syllabus()
 
@@ -554,10 +566,46 @@ class MainWindow(QWidget):
         self.numbering_combo.setCurrentIndex(
             numbering.SCHEMES.index(numbering.scheme()))
         self.retranslate()
+        self.fit_controls_to_font()
         self.refresh_corpus_state()
         self.validate_syllabus()
         if self.result is not None:
             self.populate(self.result)
+
+    def fit_controls_to_font(self):
+        """Give inputs and buttons room for the platform's own font.
+
+        The stylesheet can only express padding in pixels, but Segoe UI on
+        Windows is appreciably taller than the macOS system font at the same
+        point size, so a height that looks right on one platform clips
+        descenders on the other. Measuring the font at runtime avoids
+        guessing per-platform numbers.
+        """
+        fm = self.fontMetrics()
+        line = fm.height()
+        for widget in self.findChildren((QComboBox, QLineEdit, QSpinBox)):
+            widget.setMinimumHeight(line + 16)
+        for button in self.findChildren(QPushButton):
+            if button.objectName() in ("Info", "Help"):
+                continue                       # round / pill shaped, sized already
+            button.setMinimumHeight(line + 18)
+        self.syllabus_edit.setMinimumHeight(max(170, line * 8))
+        self.syllabus_edit.setMaximumHeight(line * 14)
+
+        # a combo must fit its longest entry plus the arrow, or the text is
+        # cut off mid-word — "Unique in the whole Tana…"
+        for combo in self.findChildren(QComboBox):
+            cfm = combo.fontMetrics()
+            widest = max((cfm.horizontalAdvance(combo.itemText(i))
+                          for i in range(combo.count())), default=0)
+            combo.setMinimumWidth(min(widest + 58, 460))
+
+        # and the settings panel must be wide enough for whatever that came to
+        left = self.split.widget(0)
+        if left is not None:
+            want = max(470, left.sizeHint().width() + 24)
+            total = max(self.width(), want + 520)
+            self.split.setSizes([want, total - want])
 
     def retranslate(self):
         self.setWindowTitle(tr("app.title"))
@@ -877,10 +925,11 @@ class MainWindow(QWidget):
             table.resizeColumnsToContents()
             hh = table.horizontalHeader()
             # cap the narrow columns so the phrase column keeps the width
+            scale = table.fontMetrics().height() / 16.0
             for col in range(1, 5):
                 hh.setSectionResizeMode(col, QHeaderView.ResizeMode.Fixed)
-                table.setColumnWidth(col, min(table.columnWidth(col) + 8,
-                                              170 if col == 1 else 110))
+                cap = int((170 if col == 1 else 110) * scale)
+                table.setColumnWidth(col, min(table.columnWidth(col) + 8, cap))
             hh.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
         for n in range(1, 6):
             if res.by_n(n):

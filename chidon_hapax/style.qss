@@ -39,7 +39,6 @@ QGroupBox {
     border: 1px solid #e3ded5;
     border-radius: 10px;
     margin-top: 14px;
-    padding: 14px 12px 10px 12px;
     font-weight: 600;
 }
 
@@ -63,6 +62,15 @@ QPlainTextEdit, QLineEdit, QTextBrowser, QSpinBox, QComboBox {
     padding: 6px 9px;
     selection-background-color: #c8dcf5;
     selection-color: #10233c;
+}
+
+/* keep the text clear of the arrow, which is wider on Windows */
+QComboBox { padding-right: 26px; }
+QComboBox::drop-down {
+    subcontrol-origin: padding;
+    subcontrol-position: center right;
+    width: 22px;
+    border: none;
 }
 
 QPlainTextEdit:focus, QLineEdit:focus, QSpinBox:focus, QComboBox:focus {

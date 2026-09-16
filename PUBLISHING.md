@@ -107,6 +107,12 @@ it and read the failed step; the error is almost always in the last few lines.
 When they finish, the built apps are at the bottom of the run page under
 **Artifacts**. These are for checking. They expire after 90 days.
 
+**If a job sits on "Queued" for more than about ten minutes**, it is usually
+asking for a runner label that no longer exists — GitHub retires old ones every
+year or so, and a job requesting a retired label waits forever instead of
+failing. The labels are the `os:` lines in `.github/workflows/build.yml`; check
+them against GitHub's current list of available runner images.
+
 ## 5. Publish a release
 
 When you are happy, tag it:
