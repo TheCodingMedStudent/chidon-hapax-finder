@@ -21,7 +21,7 @@ from . import (BSD, __author__, __license__, __url__, __version__,
                __year__, numbering, report)
 from .corpus import (USER_CORPUS_PATH, LEVELS, Corpus, corpus_exists,
                      load_corpus)
-from .engine import Options, analyze
+from .engine import Options, analyze, find_occurrences
 from .i18n import plural_form, LANGUAGES, current_language, is_rtl, set_language, tr
 from .syllabus import (SyllabusError, collect_verses, describe,
                        parse_syllabus_full)
@@ -195,6 +195,7 @@ class MainWindow(QWidget):
         self.resize(1240, 820)
         self.corpus: Corpus | None = None
         self.result = None
+        self._places_cache: dict = {}
         self.syllabus = None
         self.ranges = []
         self.thread = None
@@ -1079,7 +1080,43 @@ class MainWindow(QWidget):
                 f"{tr('col.tanach')}: {hit.tanach_count:,} · "
                 f"{tr('col.syllabus')}: {hit.syllabus_count:,}"
                 + (f" · {tr('col.root')}: {extra}" if extra else "") + "</p>")
+        note += self._other_places(hit)
         self.detail.setHtml(self._verse_html(verses, marked, note))
+
+    def _other_places(self, hit) -> str:
+        """Where else in the Tanach this word or phrase occurs.
+
+        The report tells you a word appears twice; this says where the other
+        one is. Looking it up costs about half a second, so the answer is
+        cached — clicking back and forth between entries stays instant.
+        """
+        if self.corpus is None or self.result is None:
+            return ""
+        if hit.tanach_count > 60:          # a common word: a list would be noise
+            return ""
+        opts = self.result.options
+        key = (opts.level, opts.fold_finals, opts.cross_verses, hit.text)
+        runs = self._places_cache.get(key)
+        if runs is None:
+            QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+            try:
+                runs = find_occurrences(self.corpus, hit.positions, opts)
+            finally:
+                QApplication.restoreOverrideCursor()
+            self._places_cache[key] = runs
+        if len(runs) <= 1:
+            return ""
+        here = {v.idx for v, _ in hit.positions}
+        bits = []
+        for run in runs:
+            # each reference is isolated, or the Hebrew drags the separators
+            # and the label around when the interface is left-to-right
+            ref = f"\u2067{_esc_html(self.corpus.ref(run[0][0]))}\u2069"
+            bits.append(f"<b>{ref}</b>" if run[0][0].idx in here else ref)
+        d, a = ("rtl", "right") if is_rtl() else ("ltr", "left")
+        return (f"<p dir='{d}' align='{a}' style='color:#6b7482;font-size:10pt'>"
+                f"{tr('detail.elsewhere', n=len(runs))}: "
+                + " · ".join(bits) + "</p>")
 
     # -------------------------------------------------------------- roots
     def search_root(self):

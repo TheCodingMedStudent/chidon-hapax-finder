@@ -1017,6 +1017,16 @@ S = STRINGS = {
                       "pt": "Gerado em {date}", "ru": "Создано {date}"},
     "pdf.source": {"en": "Text", "he": "נוסח המקרא", "fr": "Texte",
                    "es": "Texto", "pt": "Texto", "ru": "Текст"},
+    # the count is parenthesised rather than inflected, so no language needs a
+    # plural rule here
+    "detail.elsewhere": {
+        "en": "All places in the Tanach ({n})",
+        "he": "כל המקומות בתנ״ך ({n})",
+        "fr": "Tous les endroits dans le Tanakh ({n})",
+        "es": "Todos los lugares en el Tanaj ({n})",
+        "pt": "Todos os lugares no Tanach ({n})",
+        "ru": "Все места в Танахе ({n})",
+    },
     "label.maxCount": {
         "en": "Appears at most:", "he": "מופיע לכל היותר:",
         "fr": "Apparaît au plus :", "es": "Aparece como máximo:",

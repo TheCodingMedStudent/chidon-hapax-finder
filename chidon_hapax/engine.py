@@ -183,6 +183,66 @@ def scope_label(corpus: Corpus, opts: Options) -> str:
     return part + "טווח שנבחר"
 
 
+def _token_key(corpus: Corpus, v, i_w: int, opts: Options) -> str:
+    """How one word is compared, under the chosen level."""
+    if opts.level == "root":
+        lemma = v.lemmas[i_w] if i_w < len(v.lemmas) else 0
+        return f"L{lemma}" if lemma else normalize(v.words[i_w], "consonantal")
+    return normalize(v.words[i_w], opts.level, opts.fold_finals)
+
+
+def find_occurrences(corpus: Corpus, positions: list, opts: Options) -> list:
+    """Every place in the Tanach where the same word or phrase occurs.
+
+    Answers "the report says this appears twice — where is the other one?".
+    Comparison follows the same level the search used, so a root-level hit
+    finds the other forms of that root, not only the identical spelling.
+
+    Returns a list of position-lists, in canonical order, each the same shape
+    as a hit's own positions.
+    """
+    key = tuple(_token_key(corpus, v, i, opts) for v, i in positions)
+    n = len(key)
+    if not n:
+        return []
+    first = key[0]
+    out = []
+    for v in corpus.verses:
+        words = v.words
+        for i in range(len(words)):
+            if _token_key(corpus, v, i, opts) != first:
+                continue
+            if i + n <= len(words):              # inside one verse
+                run = [(v, i + k) for k in range(n)]
+            elif opts.cross_verses:
+                run = _span_across(corpus, v, i, n)
+                if run is None:
+                    continue
+            else:
+                continue
+            if tuple(_token_key(corpus, vv, ii, opts) for vv, ii in run) == key:
+                out.append(run)
+    return out
+
+
+def _span_across(corpus: Corpus, v, i: int, n: int):
+    """n positions starting at (v, i), continuing into following verses."""
+    run, vv, ii = [], v, i
+    while len(run) < n:
+        if ii < len(vv.words):
+            run.append((vv, ii))
+            ii += 1
+            continue
+        nxt = vv.idx + 1
+        if nxt >= len(corpus.verses):
+            return None
+        nv = corpus.verses[nxt]
+        if nv.book != vv.book or nv.chapter != vv.chapter:
+            return None
+        vv, ii = nv, 0
+    return run
+
+
 def analyze(corpus: Corpus, syllabus_verses: list, opts: Options,
             progress=None, scope_verses: set | None = None) -> Result:
     t0 = time.time()
