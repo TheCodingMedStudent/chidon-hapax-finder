@@ -6,14 +6,14 @@ import os
 import sys
 import traceback
 
-from PyQt6.QtCore import QSize, QObject, QSettings, Qt, QThread, pyqtSignal
+from PyQt6.QtCore import QAbstractTableModel, QModelIndex, QSize, QObject, QSettings, Qt, QThread, pyqtSignal
 from PyQt6.QtGui import QIcon, QFont, QTextOption
 from PyQt6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog,
                              QFileDialog, QFormLayout, QGroupBox, QHBoxLayout,
                              QHeaderView, QLabel, QLineEdit, QMessageBox,
                              QPlainTextEdit, QProgressBar, QPushButton,
                              QRadioButton, QSpinBox, QScrollArea, QSplitter, QTableWidget,
-                             QTableWidgetItem, QTabWidget, QTextBrowser,
+                             QTableWidgetItem, QTableView, QTabWidget, QTextBrowser,
                              QVBoxLayout, QWidget)
 
 from . import book_names, help_text, paths, sections
@@ -186,6 +186,61 @@ class AboutDialog(QDialog):
 
 def _esc_html(s: str) -> str:
     return (s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;"))
+
+
+class HitsModel(QAbstractTableModel):
+    """The results of one phrase length, without building a widget per cell.
+
+    A whole-Tanach search produces tens of thousands of findings. Creating a
+    table item for each cell means hundreds of thousands of objects, every one
+    of them measuring Hebrew text with cantillation — which is what froze the
+    window after the progress bar finished. A model hands the table only the
+    rows it is actually drawing.
+    """
+
+    def __init__(self, corpus, hits, by_root: bool, parent=None):
+        super().__init__(parent)
+        self.corpus = corpus
+        self.hits = hits
+        self.by_root = by_root
+        self.headers = ["", "", "", "", ""]
+
+    def rowCount(self, parent=QModelIndex()):
+        return 0 if parent.isValid() else len(self.hits)
+
+    def columnCount(self, parent=QModelIndex()):
+        return 0 if parent.isValid() else 5
+
+    def data(self, index, role=Qt.ItemDataRole.DisplayRole):
+        if not index.isValid():
+            return None
+        h = self.hits[index.row()]
+        col = index.column()
+        if role == Qt.ItemDataRole.DisplayRole:
+            if col == 0:
+                return h.text
+            if col == 1:
+                return self.corpus.ref(h.verse)
+            if col == 2:
+                return " · ".join(self.corpus.lemma_text(r) for r in h.roots) \
+                    if self.by_root else ""
+            if col == 3:
+                return f"{h.tanach_count:,}"
+            if col == 4:
+                return f"{h.syllabus_count:,}"
+        elif role == Qt.ItemDataRole.TextAlignmentRole:
+            if col in (0, 2):
+                return int(Qt.AlignmentFlag.AlignRight
+                           | Qt.AlignmentFlag.AlignVCenter)
+            return int(Qt.AlignmentFlag.AlignLeft
+                       | Qt.AlignmentFlag.AlignVCenter)
+        return None
+
+    def headerData(self, section, orientation, role=Qt.ItemDataRole.DisplayRole):
+        if (orientation == Qt.Orientation.Horizontal
+                and role == Qt.ItemDataRole.DisplayRole):
+            return self.headers[section]
+        return None
 
 
 class MainWindow(QWidget):
@@ -445,13 +500,15 @@ class MainWindow(QWidget):
         hf = QFont()
         hf.setPointSize(13)
         for n in range(1, 6):
-            t = QTableWidget(0, 5)
+            t = QTableView()
             t.verticalHeader().setVisible(False)
-            t.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
-            t.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
-            t.setSelectionMode(QTableWidget.SelectionMode.SingleSelection)
+            t.setEditTriggers(QTableView.EditTrigger.NoEditTriggers)
+            t.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
+            t.setSelectionMode(QTableView.SelectionMode.SingleSelection)
             t.setShowGrid(False)
-            t.itemSelectionChanged.connect(self.show_detail)
+            # uniform row heights let the view skip measuring every row
+            t.verticalHeader().setDefaultSectionSize(26)
+            t.setVerticalScrollMode(QTableView.ScrollMode.ScrollPerPixel)
             t.setFont(hf)
             t.horizontalHeader().setStretchLastSection(False)
             # sensible widths before any results exist, so the header is not
@@ -727,7 +784,10 @@ class MainWindow(QWidget):
         heads = [tr("col.phrase"), tr("col.place"), tr("col.root"),
                  tr("col.tanach"), tr("col.syllabus")]
         for n, t in self.tables.items():
-            t.setHorizontalHeaderLabels(heads)
+            m = t.model()
+            if m is not None:
+                m.headers = list(heads)
+                m.headerDataChanged.emit(Qt.Orientation.Horizontal, 0, 4)
             if self.result is None:
                 self.tabs.setTabText(n - 1, tr(f"tab.n{n}"))
         self.tabs.setTabText(5, tr("tab.roots"))
@@ -963,14 +1023,10 @@ class MainWindow(QWidget):
             b.setEnabled(False)
 
         def job(progress):
-            res = analyze(corpus, verses, opts, progress=progress,
-                          scope_verses=scope_verses)
-            # build the "where else does this occur" index here, in the
-            # worker, so the first row you click is instant rather than
-            # pausing for a second
-            progress(0.97, "Indexing occurrences…")
-            occurrence_index(corpus, opts)
-            return res
+            # the occurrence index is built on the first row you click, not
+            # here: a search you never click into should not pay for it
+            return analyze(corpus, verses, opts, progress=progress,
+                           scope_verses=scope_verses)
 
         def done(res):
             self.result = res
@@ -1028,7 +1084,7 @@ class MainWindow(QWidget):
             hits = res.by_n(n)
             self.tabs.setTabText(n - 1, f"{tr(f'tab.n{n}')}  ({len(hits):,})")
             self.tabs.setTabEnabled(n - 1, bool(hits))
-            self.tables[n].setRowCount(0)
+            self.tables[n].setModel(None)
         for n in range(1, 6):
             if res.by_n(n):
                 self.tabs.setCurrentIndex(n - 1)
@@ -1038,43 +1094,28 @@ class MainWindow(QWidget):
     def fill_table(self, n: int):
         if self.result is None or n in self._filled:
             return
-        res = self.result
         table = self.tables.get(n)
         if table is None:
             return
         self._filled.add(n)
-        by_root = res.options.level == "root"
-        hits = res.by_n(n)
-        table.setUpdatesEnabled(False)
-        try:
-            table.setRowCount(len(hits))
-            for row, h in enumerate(hits):
-                roots = " · ".join(self.corpus.lemma_text(r) for r in h.roots) \
-                    if by_root else ""
-                cells = [h.text, self.corpus.ref(h.verse), roots,
-                         f"{h.tanach_count:,}", f"{h.syllabus_count:,}"]
-                for col, txt in enumerate(cells):
-                    it = QTableWidgetItem(txt)
-                    it.setTextAlignment(
-                        Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
-                        if col in (0, 2) else
-                        Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
-                    table.setItem(row, col, it)
-            table.setColumnHidden(2, not by_root)
-            # measuring every row of a 60,000-row table is what made this slow:
-            # a sample is enough to pick sensible widths
-            table.setWordWrap(False)
-            hh = table.horizontalHeader()
-            hh.setResizeContentsPrecision(40)
-            table.resizeColumnsToContents()
-            scale = table.fontMetrics().height() / 16.0
-            for col in range(1, 5):
-                hh.setSectionResizeMode(col, QHeaderView.ResizeMode.Fixed)
-                cap = int((170 if col == 1 else 110) * scale)
-                table.setColumnWidth(col, min(table.columnWidth(col) + 8, cap))
-            hh.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
-        finally:
-            table.setUpdatesEnabled(True)
+        res = self.result
+        model = HitsModel(self.corpus, res.by_n(n),
+                          res.options.level == "root", table)
+        model.headers = [tr("col.phrase"), tr("col.place"), tr("col.root"),
+                         tr("col.tanach"), tr("col.syllabus")]
+        table.setModel(model)
+        sel = table.selectionModel()
+        if sel is not None:
+            sel.selectionChanged.connect(lambda *_: self.show_detail())
+        table.setColumnHidden(2, res.options.level != "root")
+        hh = table.horizontalHeader()
+        hh.setStretchLastSection(False)
+        # a sample of rows is plenty to choose widths; measuring all of them
+        # is what used to cost seconds
+        hh.setResizeContentsPrecision(30)
+        for col in range(1, 5):
+            hh.setSectionResizeMode(col, QHeaderView.ResizeMode.ResizeToContents)
+        hh.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
 
     def _verse_html(self, verses, marked, note=""):
         parts = []
@@ -1102,7 +1143,8 @@ class MainWindow(QWidget):
         table = self.tables.get(n)
         if table is None:
             return
-        rows = {i.row() for i in table.selectedItems()}
+        sel = table.selectionModel()
+        rows = {i.row() for i in sel.selectedRows()} if sel else set()
         hits = self.result.by_n(n)
         if not rows or min(rows) >= len(hits):
             return
