@@ -89,18 +89,24 @@ S = STRINGS = {
     "group.syllabus": {"en": "Syllabus", "he": "חומר הבחינה", "fr": "Programme",
                        "es": "Temario", "pt": "Programa", "ru": "Материал"},
     "syllabus.example": {
-        "en": "# One book or range per line. Hebrew or English names,\n"
-              "# chapters in letters or digits. Paste an official sheet as it is.\n",
-        "he": "# ספר או טווח בכל שורה. שמות בעברית או באנגלית,\n"
-              "# פרקים באותיות או בספרות. אפשר להדביק גיליון רשמי כמות שהוא.\n",
-        "fr": "# Un livre ou une plage par ligne. Noms en hébreu ou en anglais,\n"
-              "# chapitres en lettres ou en chiffres. Collez la feuille officielle telle quelle.\n",
-        "es": "# Un libro o rango por línea. Nombres en hebreo o inglés,\n"
-              "# capítulos en letras o cifras. Pegue la hoja oficial tal cual.\n",
-        "pt": "# Um livro ou intervalo por linha. Nomes em hebraico ou inglês,\n"
-              "# capítulos em letras ou algarismos. Cole a folha oficial como está.\n",
-        "ru": "# По одной книге или диапазону в строке. Названия на иврите или\n"
-              "# английском, главы буквами или цифрами. Можно вставить официальный лист.\n",
+        "en": "# One book or range per line. Names in Hebrew, English, French,\n"
+              "# Spanish, Portuguese or Russian; chapters in letters or digits.\n"
+              "# Paste an official sheet as it is.\n",
+        "he": "# ספר או טווח בכל שורה. שמות בעברית, אנגלית, צרפתית, ספרדית,\n"
+              "# פורטוגזית או רוסית; פרקים באותיות או בספרות.\n"
+              "# אפשר להדביק גיליון רשמי כמות שהוא.\n",
+        "fr": "# Un livre ou une plage par ligne. Noms en hébreu, anglais, français,\n"
+              "# espagnol, portugais ou russe ; chapitres en lettres ou en chiffres.\n"
+              "# Collez la feuille officielle telle quelle.\n",
+        "es": "# Un libro o rango por línea. Nombres en hebreo, inglés, francés,\n"
+              "# español, portugués o ruso; capítulos en letras o cifras.\n"
+              "# Pegue la hoja oficial tal cual.\n",
+        "pt": "# Um livro ou intervalo por linha. Nomes em hebraico, inglês, francês,\n"
+              "# espanhol, português ou russo; capítulos em letras ou algarismos.\n"
+              "# Cole a folha oficial como está.\n",
+        "ru": "# По одной книге или диапазону в строке. Названия на иврите,\n"
+              "# английском, французском, испанском, португальском или русском;\n"
+              "# главы буквами или цифрами. Можно вставить официальный лист.\n",
     },
     "ph.chapters": {
         "en": "chapters, e.g. א-יב or 1-12 (blank = whole book)",
