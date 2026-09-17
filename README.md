@@ -485,6 +485,19 @@ An Intel build does run on Apple silicon through Rosetta 2, so a single Intel
 build would cover every Mac — but users without Rosetta get an install prompt at
 first launch. Publishing both and labelling them clearly is kinder.
 
+### The disk image
+
+`packaging/dmg-background.png` is the window background people see when they
+open the `.dmg`: parchment, with an arrow pointing from the app to the
+Applications folder. `create-dmg` places the two icons on it, sets the volume
+icon from `app.icns`, and stores the arrangement in the image.
+
+That arrangement lives in Finder's own `.DS_Store`, which is why it has to be
+built on macOS with Finder driving: there is no way to write it by hand. On a
+CI runner that occasionally fails, so the workflow falls back to a plain
+`hdiutil` image and carries on. A build is never lost over decoration — you
+would just get an undecorated but working disk image, and a warning in the log.
+
 ### Choices made in the spec
 
 * `--onedir`, not `--onefile`. A single-file executable unpacks itself to a

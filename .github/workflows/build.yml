@@ -80,15 +80,40 @@ jobs:
           Compress-Archive -Path "dist/Hapax Finder" `
                            -DestinationPath "Hapax Finder (Windows).zip"
 
+      - name: Install create-dmg
+        if: runner.os == 'macOS'
+        run: brew install create-dmg
+
       - name: Package (macOS disk image)
         if: runner.os == 'macOS'
         run: |
           NAME="Hapax Finder (${{ matrix.arch == 'arm64' && 'Apple Silicon' || 'Intel' }})"
-          mkdir -p dmg
-          cp -R "dist/Hapax Finder.app" dmg/
-          ln -s /Applications dmg/Applications     # the drag-to-install target
-          hdiutil create -volname "Hapax Finder" -srcfolder dmg \
-                         -ov -format UDZO "$NAME.dmg"
+          # create-dmg drives Finder through AppleScript to arrange the window
+          # and store the layout in the image. That occasionally fails on a CI
+          # runner with no logged-in session, so fall back to a plain image
+          # rather than failing the build over decoration.
+          create-dmg \
+            --volname "Hapax Finder" \
+            --volicon "chidon_hapax/icons/app.icns" \
+            --background "packaging/dmg-background.png" \
+            --window-pos 200 120 \
+            --window-size 600 400 \
+            --icon-size 128 \
+            --icon "Hapax Finder.app" 150 200 \
+            --hide-extension "Hapax Finder.app" \
+            --app-drop-link 450 200 \
+            --no-internet-enable \
+            "$NAME.dmg" "dist/Hapax Finder.app" \
+          || {
+            echo "::warning::create-dmg failed; building a plain disk image"
+            rm -f "$NAME.dmg"
+            mkdir -p dmg
+            cp -R "dist/Hapax Finder.app" dmg/
+            ln -s /Applications dmg/Applications
+            hdiutil create -volname "Hapax Finder" -srcfolder dmg \
+                           -ov -format UDZO "$NAME.dmg"
+          }
+          ls -la *.dmg
 
       - uses: actions/upload-artifact@v4
         with:
