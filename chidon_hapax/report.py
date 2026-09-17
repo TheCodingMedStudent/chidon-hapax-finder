@@ -20,13 +20,6 @@ from .i18n import tr
 FONT_STACK = ("'Taamey Frank CLM','SBL Hebrew','Ezra SIL','David','Frank Ruehl CLM',"
               "'Times New Roman','Arial Hebrew','Noto Serif Hebrew',FreeSerif,serif")
 
-N_TITLES = {
-    1: "מילים בודדות",
-    2: "צירופים של שתי מילים",
-    3: "צירופים של שלוש מילים",
-    4: "צירופים של ארבע מילים",
-    5: "צירופים של חמש מילים",
-}
 def _n_title_local(n: int) -> str:
     """The section subtitle, in the interface language."""
     return tr(f"pdf.n{n}") if 1 <= n <= 5 else str(n)
@@ -113,20 +106,25 @@ def build_html(corpus: Corpus, result: Result, syllabus_label: str,
                practice_sheet: bool = False,
                hebrew_refs: bool = True) -> str:
     o: Options = result.options
-    title = title or "מילים וצירופים ייחודיים — Hapax legomena"
+    from .i18n import current_language
+    lang = current_language()
+    # the document follows the interface language; the Hebrew it quotes is
+    # marked right-to-left individually, wherever it appears
+    D = "rtl" if lang == "he" else "ltr"
+    A = "right" if lang == "he" else "left"
+    title = title or tr("pdf.title")
     today = _dt.date.today().isoformat()
 
     from .engine import scope_label
-    scope_he = "ייחודי ב" + scope_label(corpus, o)
-    scope_en = tr(f"scope.{o.scope}")
+    scope_text = tr(f"scope.{o.scope}")
     if o.scope == "section":
         from . import sections as _sec
-        from .i18n import current_language as _lang
-        scope_en = _sec.label(o.scope_section, _lang())
-    level_he = {"root": "שורש / ערך מילוני",
-                "consonantal": "כתיב בלבד (ללא ניקוד)",
-                "vocalized": "כתיב וניקוד",
-                "full": "כתיב, ניקוד וטעמים"}[o.level]
+        scope_text = _sec.label(o.scope_section, lang)
+    elif lang == "he":
+        scope_text = "ייחודי ב" + scope_label(corpus, o)
+    if o.scope_in_syllabus:
+        scope_text += " — " + tr("opt.scopeInSyllabus").lstrip("…")
+    level_text = tr(f"level.{o.level}")
 
     css = f"""
     body {{ font-family: {FONT_STACK}; font-size: 11pt; color: #111; }}
@@ -145,66 +143,72 @@ def build_html(corpus: Corpus, result: Result, syllabus_label: str,
     """
 
     h = [f"<html><head><meta charset='utf-8'><style>{css}</style></head>",
-         "<body dir='rtl'>"]
+         f"<body dir='{D}'>"]
 
     # ------------------------------------------------------------- cover
     if BSD:
         h.append(f"<p class='bsd' dir='rtl' align='right'>{_esc(BSD)}</p>")
-    h.append(f"<h1 dir='rtl' align='right'>{_esc(title)}</h1>")
-    h.append(f"<p class='sub' dir='rtl' align='right'>חומר הבחינה: "
+    h.append(f"<h1 dir='{D}' align='{A}'>{_esc(title)}</h1>")
+    h.append(f"<p class='sub' dir='{D}' align='{A}'>{_esc(tr('pdf.syllabus'))}: "
              f"<b>{_esc(syllabus_label)}</b></p>")
     h.append("<table width='100%' cellspacing='0'><tr>"
-             f"<th align='right'>הגדרות</th><th align='right'>ערך</th></tr>")
+             f"<th align='{A}'>{_esc(tr('pdf.setting'))}</th>"
+             f"<th align='{A}'>{_esc(tr('pdf.value'))}</th></tr>")
+    yes, no = tr("pdf.yes"), tr("pdf.no")
     rows = [
-        ("ייחודיות", f"{scope_he} ({scope_en})"),
-        ("השוואה לפי", level_he),
-        ("אורך הצירוף", ", ".join(str(n) for n in sorted(o.include_n))),
-        ("צירופים מינימליים בלבד", "כן" if o.minimal else "לא"),
-        ("מעבר בין פסוקים", "מותר" if o.cross_verses else "לא"),
-        ("היקף", (f"{n_chapters} פרקים · " if n_chapters else "")
-         + f"{result.n_verses:,} פסוקים · {result.n_words:,} מילים"),
-        ("מספור פסוקים", tr("numbering.printed")
+        (tr("pdf.uniqueness"), scope_text),
+        (tr("pdf.compareBy"), level_text),
+        (tr("pdf.lengths"), ", ".join(str(n) for n in sorted(o.include_n))),
+        (tr("pdf.minimalOnly"), yes if o.minimal else no),
+        (tr("pdf.crossVerses"), tr("pdf.allowed") if o.cross_verses else no),
+        (tr("pdf.extent"),
+         (f"{n_chapters} {tr('pdf.chapters')} · " if n_chapters else "")
+         + f"{result.n_verses:,} {tr('pdf.verses')} · "
+           f"{result.n_words:,} {tr('pdf.words')}"),
+        (tr("pdf.numbering"), tr("numbering.printed")
          if numbering.scheme() == numbering.PRINTED else tr("numbering.wlc")),
     ]
     if o.min_word_freq > 1:
-        rows.append(("סף שכיחות לכל מילה", f"≥ {o.min_word_freq} בתנ״ך"))
+        rows.append((tr("pdf.freqFloor"),
+                     f"≥ {o.min_word_freq} {tr('pdf.inTanach')}"))
     for k, v in rows:
-        h.append(f"<tr><td align='right' width='35%'><b>{_esc(k)}</b></td>"
-                 f"<td align='right'>{_esc(str(v))}</td></tr>")
+        h.append(f"<tr><td align='{A}' width='35%'><b>{_esc(k)}</b></td>"
+                 f"<td align='{A}'>{_esc(str(v))}</td></tr>")
     h.append("</table>")
 
-    h.append("<h3 dir='rtl' align='right'>סיכום</h3>")
-    h.append("<table width='100%' cellspacing='0'><tr><th align='right'>אורך</th>"
-             "<th align='right'>מספר ממצאים</th></tr>")
+    h.append(f"<h3 dir='{D}' align='{A}'>{_esc(tr('pdf.summary'))}</h3>")
+    h.append("<table width='100%' cellspacing='0'>"
+             f"<tr><th align='{A}'>{_esc(tr('pdf.length'))}</th>"
+             f"<th align='{A}'>{_esc(tr('pdf.findings'))}</th></tr>")
     for n in sorted(o.include_n):
-        h.append(f"<tr><td align='right'>{N_TITLES.get(n, n)}</td>"
-                 f"<td align='right'>{result.per_n.get(n, 0):,}</td></tr>")
-    h.append(f"<tr><td align='right'><b>סה״כ</b></td>"
-             f"<td align='right'><b>{len(result.hits):,}</b></td></tr></table>")
+        h.append(f"<tr><td align='{A}'>{_esc(_n_title_local(n))}</td>"
+                 f"<td align='{A}'>{result.per_n.get(n, 0):,}</td></tr>")
+    h.append(f"<tr><td align='{A}'><b>{_esc(tr('pdf.total'))}</b></td>"
+             f"<td align='{A}'><b>{len(result.hits):,}</b></td></tr></table>")
 
     if result.per_book:
-        h.append("<h3 dir='rtl' align='right'>לפי ספר</h3>")
-        h.append("<table width='100%' cellspacing='0'><tr><th align='right'>ספר</th>"
-                 + "".join(f"<th align='right'>{n}</th>" for n in sorted(o.include_n))
-                 + "<th align='right'>סה״כ</th></tr>")
+        h.append(f"<h3 dir='{D}' align='{A}'>{_esc(tr('pdf.byBook'))}</h3>")
+        h.append("<table width='100%' cellspacing='0'>"
+                 f"<tr><th align='{A}'>{_esc(tr('pdf.book'))}</th>"
+                 + "".join(f"<th align='{A}'>{n}</th>" for n in sorted(o.include_n))
+                 + f"<th align='{A}'>{_esc(tr('pdf.total'))}</th></tr>")
         for bi in sorted(result.per_book):
             c = result.per_book[bi]
-            h.append(f"<tr><td align='right'>{_esc(corpus.book_he(bi))}</td>"
-                     + "".join(f"<td align='right'>{c.get(n, 0)}</td>"
+            h.append(f"<tr><td align='{A}' dir='rtl'>{_esc(corpus.book_he(bi))}</td>"
+                     + "".join(f"<td align='{A}'>{c.get(n, 0)}</td>"
                                for n in sorted(o.include_n))
-                     + f"<td align='right'><b>{sum(c.values())}</b></td></tr>")
+                     + f"<td align='{A}'><b>{sum(c.values())}</b></td></tr>")
         h.append("</table>")
 
-    note = ("צירוף נחשב <b>מינימלי</b> כאשר הוא עצמו ייחודי, אך כל אחד "
-            "מתת־הצירופים שלו (באורך פחות אחד) אינו ייחודי — כלומר זהו הקטע "
-            "הקצר ביותר במקום הזה שמזהה את המיקום באופן חד־משמעי."
-            if o.minimal else "")
-    if note:
-        h.append(f"<p class='meta' dir='rtl' align='right'>{note}</p>")
+    if o.minimal:
+        h.append(f"<p class='meta' dir='{D}' align='{A}'>"
+                 f"{tr('pdf.minimalNote')}</p>")
     if numbering.scheme() == numbering.PRINTED:
-        h.append(f"<p class='meta' dir='rtl' align='right'>{tr('numbering.note')}</p>")
-    h.append(f"<p class='meta' dir='rtl' align='right'>נוצר ב־{today} · "
-             f"נוסח המקרא: {_esc(corpus.source)}</p>")
+        h.append(f"<p class='meta' dir='{D}' align='{A}'>"
+                 f"{tr('numbering.note')}</p>")
+    h.append(f"<p class='meta' dir='{D}' align='{A}'>"
+             f"{_esc(tr('pdf.generated', date=today))} · "
+             f"{_esc(tr('pdf.source'))}: {_esc(corpus.source)}</p>")
 
     # ------------------------------------------------------------ sections
     for n in sorted(o.include_n):
@@ -213,8 +217,8 @@ def build_html(corpus: Corpus, result: Result, syllabus_label: str,
             continue
         cols = 1 if show_verses else _columns_for(n)
         h.append("<p style='page-break-before:always'></p>")
-        h.append(f"<h2 dir='rtl' align='right'>{N_TITLES.get(n, n)} "
-                 f"<span class='sub'>({_n_title_local(n)} — {len(hits):,})</span></h2>")
+        h.append(f"<h2 dir='{D}' align='{A}'>{_esc(_n_title_local(n))} "
+                 f"<span class='sub'>({len(hits):,})</span></h2>")
 
         chapter = None
         entries: list = []        # (ref, phrase html) for the current chapter
@@ -272,8 +276,7 @@ def build_html(corpus: Corpus, result: Result, syllabus_label: str,
     # -------------------------------------------------------------- index
     if alphabetical_index and 1 in o.include_n and result.by_n(1):
         h.append("<p style='page-break-before:always'></p>")
-        h.append("<h2 dir='rtl' align='right'>מפתח לפי א״ב "
-                 f"<span class='sub'>({tr('pdf.index')})</span></h2>")
+        h.append(f"<h2 dir='{D}' align='{A}'>{_esc(tr('pdf.index'))}</h2>")
         from .corpus import strip_all_marks
         items = sorted(result.by_n(1), key=lambda x: strip_all_marks(x.text))
         h.append(_column_table(
@@ -283,8 +286,7 @@ def build_html(corpus: Corpus, result: Result, syllabus_label: str,
     # ----------------------------------------------------------- practice
     if practice_sheet:
         h.append("<p style='page-break-before:always'></p>")
-        h.append("<h2 dir='rtl' align='right'>דף תרגול "
-                 f"<span class='sub'>({tr('pdf.practice')})</span></h2>")
+        h.append(f"<h2 dir='{D}' align='{A}'>{_esc(tr('pdf.practice'))}</h2>")
         ordered = sorted(result.hits, key=lambda x: (x.n, x.sort_key))
         h.append("<table width='100%' cellspacing='0'>")
         for i, hit in enumerate(ordered, 1):
@@ -294,8 +296,7 @@ def build_html(corpus: Corpus, result: Result, syllabus_label: str,
                      f"____________________</td></tr>")
         h.append("</table>")
         h.append("<p style='page-break-before:always'></p>")
-        h.append(f"<h2 dir='rtl' align='right'>תשובות "
-                 f"<span class='sub'>({tr('pdf.answers')})</span></h2>")
+        h.append(f"<h2 dir='{D}' align='{A}'>{_esc(tr('pdf.answers'))}</h2>")
         h.append("<table width='100%' cellspacing='0'>")
         for i, hit in enumerate(ordered, 1):
             h.append(f"<tr><td align='right' width='8%' class='meta'>{i}.</td>"
