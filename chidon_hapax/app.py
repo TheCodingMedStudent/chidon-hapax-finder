@@ -196,6 +196,7 @@ class MainWindow(QWidget):
         self.corpus: Corpus | None = None
         self.result = None
         self._places_cache: dict = {}
+        self._filled: set = set()
         self.syllabus = None
         self.ranges = []
         self.thread = None
@@ -346,7 +347,10 @@ class MainWindow(QWidget):
         nw = QWidget()
         nw.setLayout(nrow)
         self.lengths_label = QLabel()
-        of.addRow(self.lengths_label, nw)
+        # a full-width row: the five boxes must never be cut off by a long
+        # label in the left column, which is what happened in French
+        of.addRow(self.lengths_label)
+        of.addRow(nw)
 
         self.minimal_cb = QCheckBox()
         self.minimal_cb.setChecked(True)
@@ -461,6 +465,7 @@ class MainWindow(QWidget):
             self.tabs.addTab(t, "")
         self.roots_tab = self._build_roots_tab()
         self.tabs.addTab(self.roots_tab, "")
+        self.tabs.currentChanged.connect(self.on_tab_changed)
         rv.addWidget(self.tabs, 3)
 
         self.detail = QTextBrowser()
@@ -1005,12 +1010,37 @@ class MainWindow(QWidget):
 
     # ------------------------------------------------------------ results
     def populate(self, res):
-        by_root = res.options.level == "root"
-        for n, table in self.tables.items():
+        """Label every tab, but only fill the one on screen.
+
+        A full year's material can produce ninety thousand findings. Building
+        five tables of them takes seconds and hundreds of megabytes, and four
+        of the five are not being looked at. Each tab is filled the first time
+        it is shown instead.
+        """
+        self._filled = set()
+        for n in self.tables:
             hits = res.by_n(n)
             self.tabs.setTabText(n - 1, f"{tr(f'tab.n{n}')}  ({len(hits):,})")
             self.tabs.setTabEnabled(n - 1, bool(hits))
-            table.setRowCount(0)
+            self.tables[n].setRowCount(0)
+        for n in range(1, 6):
+            if res.by_n(n):
+                self.tabs.setCurrentIndex(n - 1)
+                self.fill_table(n)
+                break
+
+    def fill_table(self, n: int):
+        if self.result is None or n in self._filled:
+            return
+        res = self.result
+        table = self.tables.get(n)
+        if table is None:
+            return
+        self._filled.add(n)
+        by_root = res.options.level == "root"
+        hits = res.by_n(n)
+        table.setUpdatesEnabled(False)
+        try:
             table.setRowCount(len(hits))
             for row, h in enumerate(hits):
                 roots = " · ".join(self.corpus.lemma_text(r) for r in h.roots) \
@@ -1025,19 +1055,20 @@ class MainWindow(QWidget):
                         Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
                     table.setItem(row, col, it)
             table.setColumnHidden(2, not by_root)
-            table.resizeColumnsToContents()
+            # measuring every row of a 60,000-row table is what made this slow:
+            # a sample is enough to pick sensible widths
+            table.setWordWrap(False)
             hh = table.horizontalHeader()
-            # cap the narrow columns so the phrase column keeps the width
+            hh.setResizeContentsPrecision(40)
+            table.resizeColumnsToContents()
             scale = table.fontMetrics().height() / 16.0
             for col in range(1, 5):
                 hh.setSectionResizeMode(col, QHeaderView.ResizeMode.Fixed)
                 cap = int((170 if col == 1 else 110) * scale)
                 table.setColumnWidth(col, min(table.columnWidth(col) + 8, cap))
             hh.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
-        for n in range(1, 6):
-            if res.by_n(n):
-                self.tabs.setCurrentIndex(n - 1)
-                break
+        finally:
+            table.setUpdatesEnabled(True)
 
     def _verse_html(self, verses, marked, note=""):
         parts = []
@@ -1053,6 +1084,10 @@ class MainWindow(QWidget):
                          f" — {''.join(words)}</p>")
         return (f"<div style='font-family:{HE_FONTS};font-size:14pt'>"
                 + "".join(parts) + note + "</div>")
+
+    def on_tab_changed(self, index: int):
+        self.fill_table(index + 1)
+        self.show_detail()
 
     def show_detail(self):
         if self.result is None:

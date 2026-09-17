@@ -17,3 +17,4 @@ Thumbs.db
 # Generated reports — yours, not the repo's
 *.pdf
 *.csv
+__MACOSX/
