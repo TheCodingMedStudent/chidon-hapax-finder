@@ -369,14 +369,28 @@ def export_html(html: str, path: str) -> str:
     return path
 
 
+#: left-to-right mark. A row that mixes Hebrew with numbers is laid out by
+#: the viewer, not by the file, so without this the columns after a Hebrew
+#: field appear in the wrong order in a text editor — the data is correct
+#: either way, and Excel never had the problem, but a CSV you cannot read at
+#: a glance is a poor CSV.
+_LRM = "\u200e"
+
+
 def export_csv(corpus: Corpus, result: Result, path: str) -> str:
+    def heb(text: str) -> str:
+        """A Hebrew field, isolated so the next column stays put."""
+        return f"{text}{_LRM}"
+
     with open(path, "w", encoding="utf-8-sig", newline="") as f:
         w = csv.writer(f)
-        w.writerow(["words", "phrase", "book", "chapter", "verse", "reference",
-                    "count_in_syllabus", "count_in_tanach", "rarest_word_freq"])
+        w.writerow(["words", "chapter", "verse", "count_in_syllabus",
+                    "count_in_tanach", "rarest_word_freq",
+                    "phrase", "book", "reference"])
         for h in sorted(result.hits, key=lambda x: (x.n, x.sort_key)):
             v = h.verse
-            w.writerow([h.n, h.text, corpus.book_he(v.book), v.chapter, v.verse,
-                        corpus.ref(v), h.syllabus_count, h.tanach_count,
-                        h.rarest_word])
+            w.writerow([h.n, v.chapter, v.verse, h.syllabus_count,
+                        h.tanach_count, h.rarest_word,
+                        heb(h.text), heb(corpus.book_he(v.book)),
+                        heb(corpus.ref(v))])
     return path

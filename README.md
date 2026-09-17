@@ -320,6 +320,26 @@ Counts were verified against brute-force recounts: אשר 4,837 · הארץ 935 
 בראשית 5. Just over half of all consonantal word-forms in the Tanach (20,480 of
 39,527) occur exactly once.
 
+## The CSV
+
+Columns are ordered numbers first, Hebrew last:
+
+```
+words, chapter, verse, count_in_syllabus, count_in_tanach, rarest_word_freq,
+phrase, book, reference
+```
+
+This is deliberate. A row that mixes Hebrew with numbers is laid out by
+whatever displays it, not by the file, so a text editor will happily show the
+columns *after* a Hebrew field in the wrong visual order — the data is correct,
+the rendering is not. Keeping the Hebrew at the end means there is nothing after
+it to be reordered, and each Hebrew field also ends with a left-to-right mark
+(U+200E) so the following comma stays where it belongs. Spreadsheets never had
+the problem; this is for reading the file directly.
+
+The file is UTF-8 with a BOM, which is what makes Excel open Hebrew correctly
+instead of showing mojibake.
+
 ## Installing it — and the warnings you will see
 
 The apps are not signed with a paid developer certificate, so both operating
