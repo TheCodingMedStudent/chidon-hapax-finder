@@ -138,12 +138,28 @@ S = STRINGS = {
         "pt": "✓ corresponde ao total indicado na folha ({total})",
         "ru": "✓ совпадает с итогом на листе ({total})",
     },
-    "syl.skipped": {
-        "en": "skipped {n} line(s): {lines}", "he": "דולגו {n} שורות: {lines}",
-        "fr": "{n} ligne(s) ignorée(s) : {lines}",
-        "es": "{n} línea(s) omitida(s): {lines}",
-        "pt": "{n} linha(s) ignorada(s): {lines}",
-        "ru": "пропущено строк: {n} — {lines}",
+    # one / few / many, chosen by plural_form() below. Most languages use only
+    # "one" and "many"; Russian also needs the 2-4 form.
+    "syl.skipped.one": {
+        "en": "skipped 1 line: {lines}", "he": "דולגה שורה אחת: {lines}",
+        "fr": "1 ligne ignorée : {lines}",
+        "es": "1 línea omitida: {lines}",
+        "pt": "1 linha ignorada: {lines}",
+        "ru": "пропущена 1 строка: {lines}",
+    },
+    "syl.skipped.few": {
+        "en": "skipped {n} lines: {lines}", "he": "דולגו {n} שורות: {lines}",
+        "fr": "{n} lignes ignorées : {lines}",
+        "es": "{n} líneas omitidas: {lines}",
+        "pt": "{n} linhas ignoradas: {lines}",
+        "ru": "пропущено {n} строки: {lines}",
+    },
+    "syl.skipped.many": {
+        "en": "skipped {n} lines: {lines}", "he": "דולגו {n} שורות: {lines}",
+        "fr": "{n} lignes ignorées : {lines}",
+        "es": "{n} líneas omitidas: {lines}",
+        "pt": "{n} linhas ignoradas: {lines}",
+        "ru": "пропущено {n} строк: {lines}",
     },
     # --------------------------------------------------------- options
     "group.unique": {
@@ -323,9 +339,19 @@ S = STRINGS = {
         "pt": "{n} entradas em {s} s", "ru": "Найдено записей: {n} за {s} с",
     },
     # ------------------------------------------------------------ tabs
-    "tab.words": {"en": "{n} word(s)", "he": "{n} מילים", "fr": "{n} mot(s)",
-                  "es": "{n} palabra(s)", "pt": "{n} palavra(s)",
-                  "ru": "{n} сл."},
+    # one entry per length: "1 word", "2 words". Written out rather than
+    # generated, because plural rules differ — Russian wants слово / слова /
+    # слов, and Hebrew counts with its own forms.
+    "tab.n1": {"en": "1 word", "he": "מילה אחת", "fr": "1 mot",
+               "es": "1 palabra", "pt": "1 palavra", "ru": "1 слово"},
+    "tab.n2": {"en": "2 words", "he": "שתי מילים", "fr": "2 mots",
+               "es": "2 palabras", "pt": "2 palavras", "ru": "2 слова"},
+    "tab.n3": {"en": "3 words", "he": "שלוש מילים", "fr": "3 mots",
+               "es": "3 palabras", "pt": "3 palavras", "ru": "3 слова"},
+    "tab.n4": {"en": "4 words", "he": "ארבע מילים", "fr": "4 mots",
+               "es": "4 palabras", "pt": "4 palavras", "ru": "4 слова"},
+    "tab.n5": {"en": "5 words", "he": "חמש מילים", "fr": "5 mots",
+               "es": "5 palabras", "pt": "5 palavras", "ru": "5 слов"},
     "tab.roots": {"en": "Root search", "he": "חיפוש שורש",
                   "fr": "Recherche de racine", "es": "Búsqueda de raíz",
                   "pt": "Busca de raiz", "ru": "Поиск корня"},
@@ -992,3 +1018,20 @@ S = STRINGS = {
     "pdf.source": {"en": "Text", "he": "נוסח המקרא", "fr": "Texte",
                    "es": "Texto", "pt": "Texto", "ru": "Текст"},
 }
+
+
+def plural_form(n: int) -> str:
+    """"one", "few" or "many" for the active language.
+
+    English, French, Spanish, Portuguese and Hebrew split at one; Russian also
+    needs a form for 2-4, and reverts to "many" in the teens.
+    """
+    if current_language() == "ru":
+        if n % 100 in range(11, 15):
+            return "many"
+        if n % 10 == 1:
+            return "one"
+        if n % 10 in (2, 3, 4):
+            return "few"
+        return "many"
+    return "one" if n == 1 else "many"

@@ -22,7 +22,7 @@ from . import (BSD, __author__, __license__, __url__, __version__,
 from .corpus import (USER_CORPUS_PATH, LEVELS, Corpus, corpus_exists,
                      load_corpus)
 from .engine import Options, analyze
-from .i18n import LANGUAGES, current_language, is_rtl, set_language, tr
+from .i18n import plural_form, LANGUAGES, current_language, is_rtl, set_language, tr
 from .syllabus import (SyllabusError, collect_verses, describe,
                        parse_syllabus_full)
 
@@ -715,7 +715,7 @@ class MainWindow(QWidget):
         for n, t in self.tables.items():
             t.setHorizontalHeaderLabels(heads)
             if self.result is None:
-                self.tabs.setTabText(n - 1, tr("tab.words", n=n))
+                self.tabs.setTabText(n - 1, tr(f"tab.n{n}"))
         self.tabs.setTabText(5, tr("tab.roots"))
         self.root_edit.setPlaceholderText(tr("roots.ph"))
         self.root_btn.setText(tr("roots.search"))
@@ -889,7 +889,8 @@ class MainWindow(QWidget):
         if syl.ignored:
             shown = " / ".join(syl.ignored[:2])
             bits.append("<span style='color:#b0743a'>⚠ "
-                        + tr("syl.skipped", n=len(syl.ignored), lines=shown)
+                        + tr(f"syl.skipped.{plural_form(len(syl.ignored))}",
+                             n=len(syl.ignored), lines=shown)
                         + "</span>")
         self.syllabus_status.setText("<br>".join(bits))
         self.syllabus_status.setToolTip("\n".join(syl.ignored))
@@ -997,7 +998,7 @@ class MainWindow(QWidget):
         by_root = res.options.level == "root"
         for n, table in self.tables.items():
             hits = res.by_n(n)
-            self.tabs.setTabText(n - 1, f"{tr('tab.words', n=n)}  ({len(hits):,})")
+            self.tabs.setTabText(n - 1, f"{tr(f'tab.n{n}')}  ({len(hits):,})")
             self.tabs.setTabEnabled(n - 1, bool(hits))
             table.setRowCount(0)
             table.setRowCount(len(hits))
