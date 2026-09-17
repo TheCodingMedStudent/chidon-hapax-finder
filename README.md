@@ -320,6 +320,214 @@ Counts were verified against brute-force recounts: אשר 4,837 · הארץ 935 
 בראשית 5. Just over half of all consonantal word-forms in the Tanach (20,480 of
 39,527) occur exactly once.
 
+## Installing it — and the warnings you will see
+
+The apps are not signed with a paid developer certificate, so both operating
+systems warn about them. Nothing is wrong: the warnings say *"we cannot verify
+who made this"*, not *"this is dangerous"*. The steps below are what to tell
+anyone you pass it to.
+
+### macOS
+
+Open the `.dmg` and drag **Hapax Finder** to Applications. The first time you
+open it you get:
+
+> **"Hapax Finder" Not Opened**
+> Apple could not verify "Hapax Finder" is free of malware that may harm your
+> Mac or compromise your privacy.
+
+with a single **Done** button and no visible way forward. This stops most
+people, so it is worth spelling out:
+
+1. Click **Done**.
+2.  → **System Settings** → **Privacy & Security**.
+3. Scroll down. A line has appeared: *"Hapax Finder" was blocked to protect
+   your Mac*, with an **Open Anyway** button beside it.
+4. Click **Open Anyway** and authenticate.
+5. Click **Open Anyway** once more in the dialog that follows.
+
+That is only needed once; afterwards it opens normally.
+
+**The order matters.** The Open Anyway button appears only *after* you have
+tried to open the app and been refused, and it disappears again after about an
+hour. Approving it in advance is not possible. On macOS Sequoia and later, the
+old trick of right-clicking the app and choosing Open no longer works either.
+
+### Windows
+
+Download the `.zip` and **extract it before running anything**. Windows itself
+warns about this:
+
+> **This application may depend on other compressed files in this folder.**
+> For the application to run properly, it is recommended that you first extract
+> all files.
+
+Click **Extract all**. The warning is correct — the program is a folder of
+files, not a single executable, and running it from inside the zip will fail.
+
+Then open the extracted folder and run **Hapax Finder.exe**. You may then meet
+SmartScreen, in one of two blue dialogs. Which one depends on whether the
+machine can reach Microsoft's reputation service, and some people will see
+neither, because SmartScreen can be switched off.
+
+**"Windows protected your PC"** — the usual one, on a machine with a working
+connection. The only obvious buttons are *Don't run* and *Close*; the way
+forward hides behind the small **More info** link. Click that, then
+**Run anyway**.
+
+**"SmartScreen can't be reached right now"** — when the machine is offline or
+behind a restrictive network:
+
+> Check your Internet connection. Microsoft Defender SmartScreen is unreachable
+> and can't help you decide if this app is ok to run.
+> Publisher: Unknown Publisher · File Type: .exe · App: Hapax Finder.exe
+
+This one offers **Run** and **Don't Run** directly. Click **Run**.
+
+"Unknown Publisher" is simply the absence of a paid code-signing certificate,
+not a judgement about the program.
+
+An antivirus may also flag it. This is a false positive, and a common one: a
+Python program packaged this way looks structurally similar to some malware, in
+that a launcher unpacks and runs bundled code. Nothing is downloaded, nothing is
+installed, and the whole source is in this repository for anyone who wants to
+check.
+
+### Why not just sign it?
+
+Signing costs $99 a year for an Apple Developer ID, plus notarisation for every
+release, and a separate certificate for Windows. For a program given free to
+friends that is hard to justify. The trade is real though: unsigned software
+asks the people you give it to to trust you personally rather than trust a
+certificate.
+
+## Building the apps
+
+The program runs from source with `python run.py` on any platform with Python
+3.10+ and PyQt6. What follows produces the standalone `.exe` and `.app`.
+
+```
+pip install pyinstaller
+pyinstaller chidon_hapax.spec
+```
+
+That produces `dist/Hapax Finder/` on Windows and `dist/Hapax Finder.app` on
+macOS. Check the result without a screen:
+
+```
+"dist/Hapax Finder/Hapax Finder" --selftest                       # Windows
+"dist/Hapax Finder.app/Contents/MacOS/Hapax Finder" --selftest    # macOS
+```
+
+It loads the bundled corpus, runs a known analysis (Jonah must yield exactly 49
+hapaxes) and checks every packaged resource, then prints `SELFTEST PASSED`. If a
+data file failed to reach the bundle, this catches it.
+
+**You cannot cross-compile.** A Windows `.exe` must be built on Windows and a
+macOS `.app` on macOS, and the architecture matters too: a build made on an
+Apple-silicon Mac, including inside an ARM Windows virtual machine, will not run
+on an ordinary Intel/AMD Windows PC.
+
+### macOS: two builds, not one universal app
+
+`PyQt6-Qt6` — the Qt libraries themselves, and most of the bundle's weight — is
+published as separate `x86_64` and `arm64` wheels, with no `universal2` wheel.
+PyInstaller cannot fuse a universal app out of single-architecture libraries, so
+**`target_arch="universal2"` will fail.** Build once per architecture:
+
+| Mac | runner in CI |
+| --- | --- |
+| Apple silicon (M1 and later, 2020+) | `macos-14` |
+| Intel (2019 and earlier) | `macos-15-intel` |
+
+An Intel build does run on Apple silicon through Rosetta 2, so a single Intel
+build would cover every Mac — but users without Rosetta get an install prompt at
+first launch. Publishing both and labelling them clearly is kinder.
+
+### Choices made in the spec
+
+* `--onedir`, not `--onefile`. A single-file executable unpacks itself to a
+  temporary folder on every launch: slower to start, and the behaviour most
+  antivirus heuristics treat as suspicious.
+* No UPX compression, for the same reason.
+* Qt's WebEngine, QML, Quick and Multimedia are excluded; none are used, and
+  they account for most of the weight otherwise.
+* `version_info.txt` fills in Windows' Properties → Details. An executable with
+  no publisher information looks *more* suspicious to SmartScreen, not less.
+
+## Publishing
+
+[`PUBLISHING.md`](PUBLISHING.md) walks through putting this on GitHub and
+producing the three downloads, written for someone who has not used git before.
+
+`.github/workflows/build.yml` builds all three on GitHub's machines — Windows
+x64, macOS Apple Silicon, macOS Intel — and each build must pass `--selftest`
+*inside the packaged app* before it can be published. Pushing a tag beginning
+with `v` creates a draft release with the files attached.
+
+## The built-in guide
+
+People who run the packaged app never see this README, so the program carries
+its own guide: an eleven-section walkthrough in all six interface languages,
+reached from **How it works** in the header. It opens by itself on first run;
+the checkbox at the bottom of it controls whether it opens every time, and the
+button brings it back whenever you want it.
+
+## Which corpus gets used
+
+The Tanach text ships inside the program. The **Download Tanach text** button
+rebuilds it from the Open Scriptures source into your own data folder
+(`%APPDATA%\ChidonHapaxFinder` on Windows, `~/Library/Application
+Support/ChidonHapaxFinder` on macOS) — never into the program folder, which is
+read-only inside a `.app` or under Program Files.
+
+When both exist, the program picks between them by the corpus's format version:
+
+* Bundled version **newer** than yours → the bundled one wins, so a corpus fix
+  shipped in an update reaches people who rebuilt once, instead of staying
+  invisible on their machine forever.
+* Same version → **yours** wins. You rebuilt deliberately, and that stands.
+* Your file unreadable or truncated → the bundled one, silently.
+
+`CORPUS_FORMAT_VERSION` in `corpus.py` is the single place that number lives;
+`build_corpus.py` stamps it into every corpus it writes. Bump it whenever you
+change how the corpus is generated.
+
+## Licence
+
+Copyright (C) 2026 Daniel Mechoulan.
+
+This program is free software under the **GNU General Public License, version 3
+or later**. You may use it, study it, share it and change it. The one condition
+that matters: if you distribute it, or anything built from it, you must do so
+under the GPL as well and make the source available. That keeps it free for
+everyone downstream — nobody can take this, close it, and sell it.
+
+The full text is in [`LICENSE`](LICENSE).
+
+The GPL is also required here rather than merely chosen: the program is built on
+PyQt6, which is itself GPL-3.0, so any binary containing it has to be.
+
+### The Hebrew text is licensed separately
+
+The bundled Tanach is the Westminster Leningrad Codex as published by the
+[Open Scriptures Hebrew Bible](https://github.com/openscriptures/morphhb)
+project, under **CC-BY 4.0**, and it stays under those terms — the GPL does not
+and cannot apply to it. Root and gloss data come from
+[HebrewLexicon](https://github.com/openscriptures/HebrewLexicon) (Strong's,
+public domain).
+
+As CC-BY requires: *the text has been modified.* The OSIS XML was parsed into a
+compressed JSON corpus, with qere readings preferred, maqqef-joined words
+counted separately, and a Strong's lemma attached to each word. The text itself
+was not altered.
+
+### What you produce is yours
+
+The PDFs, HTML and CSV files this program generates belong to you. The GPL
+covers the program, not its output, so you may share study sheets with anyone,
+in any way, including for money.
+
 ## Known limits
 
 * Peak memory ≈ 225 MB on the largest runs; a full-syllabus search takes about

@@ -140,7 +140,9 @@ Apple Silicon; "Intel" means Intel.
 
 Send them the "Installing it" section of the README along with the link — both
 systems warn about unsigned apps, and on macOS the dialog has no visible way
-forward, so people give up unless told what to do.
+forward, so people give up unless told what to do. On Windows there are two
+different SmartScreen dialogs depending on whether the machine can reach
+Microsoft's servers; the README covers both.
 
 ## 6. Changing something later
 
