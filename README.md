@@ -170,6 +170,27 @@ elsewhere.
 
 ---
 
+## Twice, three times — not only hapaxes
+
+**Appears at most** decides how rare is rare enough. At 1 you get true hapax
+legomena. At 2 you also get the words and phrases occurring exactly twice, at 3
+three times, and so on up to 20.
+
+Every occurrence inside your syllabus is listed **separately**, which is the
+point of the setting. נֹאבֵד occurs twice in the whole Tanach — Jonah 1:6 and
+3:9, both inside the book — so it appears as two entries. In a face-off that is
+exactly what you need: one contestant names one occurrence, the other names the
+second.
+
+The Tanach and syllabus counts beside each entry tell you how many there are, so
+you know whether you are looking at a word that occurs twice or one that occurs
+once.
+
+The minimal-phrase rule follows the same threshold: with **Appears at most** set
+to 2, a phrase is reported only when its shorter parts occur *more* than twice,
+so you do not get long phrases whose interest lies entirely in a word that is
+already on the list.
+
 ## Why phrases need the "minimal" rule
 
 Almost every 5-word window in the Tanach is unique. A naive list of unique

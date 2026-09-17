@@ -349,6 +349,12 @@ class MainWindow(QWidget):
 
         self.minimal_cb = QCheckBox()
         self.minimal_cb.setChecked(True)
+        self.count_spin = QSpinBox()
+        self.count_spin.setRange(1, 20)
+        self.count_spin.setValue(1)
+        self.count_label = QLabel()
+        of.addRow(self.count_label, self.count_spin)
+
         of.addRow(self.minimal_cb)
         self.cross_cb = QCheckBox()
         of.addRow(self.cross_cb)
@@ -695,6 +701,8 @@ class MainWindow(QWidget):
         self.cross_cb.setText(tr("opt.cross"))
         self.freq_label.setText(tr("label.freq"))
         self.freq_spin.setToolTip(tr("tip.freq"))
+        self.count_label.setText(tr("label.maxCount"))
+        self.count_spin.setToolTip(tr("tip.maxCount"))
         self.report_box.setTitle(tr("group.report"))
         self.title_label.setText(tr("label.title"))
         self.numbering_label.setText(tr("label.numbering"))
@@ -910,6 +918,7 @@ class MainWindow(QWidget):
                        minimal=self.minimal_cb.isChecked(),
                        cross_verses=self.cross_cb.isChecked(),
                        min_word_freq=self.freq_spin.value(),
+                       max_count=self.count_spin.value(),
                        include_n=include)
 
     def run_analysis(self):

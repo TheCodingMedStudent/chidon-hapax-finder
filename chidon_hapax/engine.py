@@ -35,6 +35,12 @@ class Options:
     #: "custom"   — once inside the range given in scope_verses
     scope: str = "tanach"
     scope_section: str = "neviim_rishonim"
+    #: how many times a word or phrase may occur and still be reported.
+    #: 1 = a true hapax; 2 also finds the words occurring exactly twice
+    #: (dis legomena), and so on. Every occurrence inside the syllabus is
+    #: listed separately, which is the point: in a face-off each contestant
+    #: has to name one of them.
+    max_count: int = 1
     #: count only the verses that are also in the syllabus, so the scope
     #: becomes "my part of its own book" / "my part of that section"
     scope_in_syllabus: bool = False
@@ -235,19 +241,22 @@ def analyze(corpus: Corpus, syllabus_verses: list, opts: Options,
                 if b is None:          # this occurrence is outside the scope
                     continue
                 seen = candidates.get(key)
-                if seen is not None and b in seen:
-                    continue
+                if seen is not None and len(seen.get(b, ())) >= opts.max_count:
+                    continue                  # already have as many as we report
                 # the floor is about phrases built from ordinary words; a
                 # single-word hapax always has frequency 1, so n=1 is exempt
                 if n > 1 and opts.min_word_freq > 1 and \
                         any(global1[t] < opts.min_word_freq for t in key):
                     continue
                 if opts.minimal and n > 1:
-                    if prev_scope_counts.get((b, key[:-1]), 1) < 2:
+                    # a phrase is only interesting if its shorter parts are
+                    # themselves *not* rare enough to be reported already
+                    if prev_scope_counts.get((b, key[:-1]), 1) <= opts.max_count:
                         continue
-                    if prev_scope_counts.get((b, key[1:]), 1) < 2:
+                    if prev_scope_counts.get((b, key[1:]), 1) <= opts.max_count:
                         continue
-                candidates.setdefault(key, {})[b] = pos[i:i + n]
+                candidates.setdefault(key, {}).setdefault(b, []).append(
+                    pos[i:i + n])
         if not candidates:
             prev_scope_counts = {}
             continue
@@ -277,18 +286,21 @@ def analyze(corpus: Corpus, syllabus_verses: list, opts: Options,
         keep = n in opts.include_n
         if keep:
             for key, by_bucket in candidates.items():
-                for b, positions in by_bucket.items():
-                    if scope_counts[(b, key)] != 1:
+                for b, occurrences in by_bucket.items():
+                    count = scope_counts[(b, key)]
+                    if count > opts.max_count:
                         continue
-                    hits.append(Hit(
-                        n=n, positions=positions,
-                        text=span_text(corpus, positions),
-                        syllabus_count=syll_counts[key],
-                        tanach_count=tanach_counts[key],
-                        scope_count=1,
-                        rarest_word=min(global1[t] for t in key),
-                        roots=tuple(vv.lemmas[ii] for vv, ii in positions)
-                        if by_root else ()))
+                    # one entry per occurrence that falls inside the syllabus
+                    for positions in occurrences:
+                        hits.append(Hit(
+                            n=n, positions=positions,
+                            text=span_text(corpus, positions),
+                            syllabus_count=syll_counts[key],
+                            tanach_count=tanach_counts[key],
+                            scope_count=count,
+                            rarest_word=min(global1[t] for t in key),
+                            roots=tuple(vv.lemmas[ii] for vv, ii in positions)
+                            if by_root else ()))
 
         prev_scope_counts = dict(scope_counts)
 

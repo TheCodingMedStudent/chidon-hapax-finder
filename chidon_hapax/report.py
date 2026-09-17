@@ -168,6 +168,8 @@ def build_html(corpus: Corpus, result: Result, syllabus_label: str,
         (tr("pdf.numbering"), tr("numbering.printed")
          if numbering.scheme() == numbering.PRINTED else tr("numbering.wlc")),
     ]
+    if o.max_count > 1:
+        rows.insert(1, (tr("pdf.maxCount"), f"≤ {o.max_count}"))
     if o.min_word_freq > 1:
         rows.append((tr("pdf.freqFloor"),
                      f"≥ {o.min_word_freq} {tr('pdf.inTanach')}"))

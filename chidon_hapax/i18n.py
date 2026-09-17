@@ -1017,6 +1017,42 @@ S = STRINGS = {
                       "pt": "Gerado em {date}", "ru": "Создано {date}"},
     "pdf.source": {"en": "Text", "he": "נוסח המקרא", "fr": "Texte",
                    "es": "Texto", "pt": "Texto", "ru": "Текст"},
+    "label.maxCount": {
+        "en": "Appears at most:", "he": "מופיע לכל היותר:",
+        "fr": "Apparaît au plus :", "es": "Aparece como máximo:",
+        "pt": "Aparece no máximo:", "ru": "Встречается не более:",
+    },
+    "tip.maxCount": {
+        "en": "1 finds words and phrases occurring only once — a true hapax.\n"
+              "2 also finds those occurring exactly twice, 3 three times, and so\n"
+              "on. Every occurrence inside your syllabus is listed separately,\n"
+              "so in a face-off each contestant can name one of them.",
+        "he": "1 מוצא מילים וצירופים המופיעים פעם אחת בלבד.\n"
+              "2 מוצא גם את המופיעים פעמיים בדיוק, 3 שלוש פעמים, וכן הלאה.\n"
+              "כל הופעה בתוך חומר הבחינה מוצגת בנפרד, כך שבעימות כל מתמודד\n"
+              "יכול לציין אחת מהן.",
+        "fr": "1 trouve les mots et expressions n'apparaissant qu'une fois — un\n"
+              "véritable hapax. 2 trouve aussi ceux apparaissant exactement deux\n"
+              "fois, 3 trois fois, etc. Chaque occurrence dans votre programme\n"
+              "est listée séparément : lors d'un face-à-face, chaque candidat\n"
+              "peut en citer une.",
+        "es": "1 encuentra palabras y expresiones que aparecen una sola vez.\n"
+              "2 encuentra también las que aparecen exactamente dos veces, 3 tres\n"
+              "veces, etc. Cada aparición dentro de su temario se lista por\n"
+              "separado.",
+        "pt": "1 encontra palavras e expressões que ocorrem uma só vez.\n"
+              "2 encontra também as que ocorrem exatamente duas vezes, 3 três\n"
+              "vezes, etc. Cada ocorrência dentro do seu programa é listada\n"
+              "separadamente.",
+        "ru": "1 находит слова и выражения, встречающиеся только один раз.\n"
+              "2 находит и те, что встречаются ровно дважды, 3 — трижды, и так\n"
+              "далее. Каждое вхождение внутри материала показывается отдельно.",
+    },
+    "pdf.maxCount": {
+        "en": "Occurrences allowed", "he": "מספר הופעות מותר",
+        "fr": "Occurrences autorisées", "es": "Apariciones permitidas",
+        "pt": "Ocorrências permitidas", "ru": "Допустимо вхождений",
+    },
 }
 
 

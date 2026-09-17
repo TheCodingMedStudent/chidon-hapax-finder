@@ -68,6 +68,18 @@ GUIDE: dict[str, list[tuple[str, str]]] = {
          "comptent, et ce mot est retenu.<br>"
          "Dans les deux cas, <b>chaque résultat est un verset de votre "
          "programme</b>. Ce réglage ne fait que retirer des résultats."),
+        ("Deux fois, trois fois — pas seulement les hapax",
+         "<b>Apparaît au plus</b> décide de ce qui est assez rare. À 1, vous "
+         "obtenez les véritables hapax : les mots et expressions n'apparaissant "
+         "qu'une seule fois. À 2, vous obtenez aussi ceux qui apparaissent "
+         "exactement deux fois, à 3 trois fois, et ainsi de suite.<br>"
+         "Les compteurs à côté de chaque entrée indiquent le nombre "
+         "d'occurrences, ce qui permet de voir d'un coup d'œil si un mot "
+         "apparaît une ou deux fois. Toutes les références nécessaires seront "
+         "indiquées.<br>"
+         "L'option <b>expressions minimales seulement</b> suit le même seuil : "
+         "à 2, une expression n'est conservée que si ses parties plus courtes "
+         "apparaissent plus de deux fois."),
         ("Expressions, pas seulement des mots",
          "Cochez les longueurs 1 à 5 : l'application cherche aussi bien un mot "
          "isolé qu'une suite de deux, trois, quatre ou cinq mots "
@@ -176,6 +188,17 @@ GUIDE: dict[str, list[tuple[str, str]]] = {
          "reported.<br>"
          "Either way, <b>every result is a verse inside your syllabus</b>. "
          "This setting only removes results; it never sends you elsewhere."),
+        ("Twice, three times — not only hapaxes",
+         "<b>Appears at most</b> decides how rare is rare enough. At 1 you get "
+         "true hapax legomena: words and phrases occurring exactly once. At 2 "
+         "you also get those occurring exactly twice, at 3 three times, and so "
+         "on.<br>"
+         "The counts beside each entry tell you how many occurrences there "
+         "are, so you can see at a glance whether a word occurs once or twice. "
+         "All necessary references will be given.<br>"
+         "The <b>minimal phrases only</b> rule follows the same threshold: at "
+         "2, a phrase is kept only when its shorter parts occur more than "
+         "twice."),
         ("Phrases, not just words",
          "Tick the lengths 1 to 5: the program looks for a single word just as "
          "readily as a run of two, three, four or five consecutive words.<br>"
@@ -271,6 +294,14 @@ GUIDE: dict[str, list[tuple[str, str]]] = {
          "נלמדת. <b>עם סימון</b>, נספרים רק פרקים א-לט, ואותה מילה תדווח.<br>"
          "בכל מקרה, <b>כל תוצאה נמצאת בתוך חומר הבחינה</b>. ההגדרה רק מסננת "
          "תוצאות; היא לעולם אינה מפנה למקום אחר."),
+        ("פעמיים, שלוש פעמים — לא רק מילים ייחודיות",
+         "<b>מופיע לכל היותר</b> קובע מה נחשב נדיר מספיק. ב-1 מתקבלים הפקס "
+         "לגומנון האמיתיים: מילים וצירופים המופיעים בדיוק פעם אחת. ב-2 מתקבלים "
+         "גם המופיעים בדיוק פעמיים, ב-3 שלוש פעמים, וכן הלאה.<br>"
+         "המספרים שליד כל ערך מציינים כמה הופעות יש, כך שאפשר לראות במבט אחד "
+         "אם מילה מופיעה פעם אחת או פעמיים. כל המראי מקום הדרושים יינתנו.<br>"
+         "האפשרות <b>צירופים מינימליים בלבד</b> פועלת לפי אותו סף: ב-2, צירוף "
+         "נשמר רק אם חלקיו הקצרים יותר מופיעים יותר מפעמיים."),
         ("צירופים, לא רק מילים",
          "מסמנים אורכים 1 עד 5: התוכנה מחפשת גם מילה בודדת וגם רצף של שתיים, "
          "שלוש, ארבע או חמש מילים רצופות.<br>"
@@ -367,6 +398,17 @@ GUIDE: dict[str, list[tuple[str, str]]] = {
          "muestra.<br>"
          "En ambos casos, <b>cada resultado es un versículo de su temario</b>. "
          "Este ajuste solo quita resultados; nunca le envía a otro sitio."),
+        ("Dos veces, tres veces — no solo los hápax",
+         "<b>Aparece como máximo</b> decide qué es lo bastante raro. Con 1 "
+         "obtiene los hápax verdaderos: palabras y expresiones que aparecen "
+         "exactamente una vez. Con 2 obtiene también las que aparecen "
+         "exactamente dos veces, con 3 tres veces, y así sucesivamente.<br>"
+         "Los recuentos junto a cada entrada indican cuántas apariciones hay, "
+         "de modo que se ve de un vistazo si una palabra aparece una o dos "
+         "veces. Se darán todas las referencias necesarias.<br>"
+         "La opción <b>solo expresiones mínimas</b> sigue el mismo umbral: con "
+         "2, una expresión se conserva solo si sus partes más cortas aparecen "
+         "más de dos veces."),
         ("Expresiones, no solo palabras",
          "Marque las longitudes 1 a 5: la aplicación busca tanto una palabra "
          "suelta como una sucesión de dos, tres, cuatro o cinco palabras "
@@ -475,6 +517,17 @@ GUIDE: dict[str, list[tuple[str, str]]] = {
          "Em ambos os casos, <b>cada resultado é um versículo do seu "
          "programa</b>. Esta definição apenas retira resultados; nunca o envia "
          "para outro lado."),
+        ("Duas vezes, três vezes — não só os hápax",
+         "<b>Aparece no máximo</b> decide o que é suficientemente raro. Com 1 "
+         "obtém os hápax verdadeiros: palavras e expressões que ocorrem "
+         "exatamente uma vez. Com 2 obtém também as que ocorrem exatamente "
+         "duas vezes, com 3 três vezes, e assim por diante.<br>"
+         "As contagens junto de cada entrada indicam quantas ocorrências há, "
+         "pelo que se vê num relance se uma palavra ocorre uma ou duas vezes. "
+         "Serão dadas todas as referências necessárias.<br>"
+         "A opção <b>apenas expressões mínimas</b> segue o mesmo limiar: com 2, "
+         "uma expressão só é mantida se as suas partes mais curtas ocorrerem "
+         "mais de duas vezes."),
         ("Expressões, não só palavras",
          "Marque os comprimentos 1 a 5: a aplicação procura tanto uma palavra "
          "isolada como uma sequência de duas, três, quatro ou cinco palavras "
@@ -579,6 +632,17 @@ GUIDE: dict[str, list[tuple[str, str]]] = {
          "В обоих случаях <b>каждый результат — стих внутри вашего "
          "материала</b>. Настройка только убирает результаты и никогда не "
          "отправляет вас в другое место."),
+        ("Дважды, трижды — не только гапаксы",
+         "<b>Встречается не более</b> решает, что считать достаточно редким. "
+         "При 1 вы получаете настоящие гапаксы: слова и выражения, "
+         "встречающиеся ровно один раз. При 2 — также те, что встречаются "
+         "ровно дважды, при 3 — трижды, и так далее.<br>"
+         "Числа рядом с каждой записью показывают, сколько всего вхождений, "
+         "так что сразу видно, встречается слово один раз или два. Все "
+         "необходимые ссылки будут указаны.<br>"
+         "Настройка <b>только минимальные выражения</b> использует тот же "
+         "порог: при 2 выражение сохраняется, только если его более короткие "
+         "части встречаются более двух раз."),
         ("Выражения, а не только слова",
          "Отметьте длины от 1 до 5: программа ищет и отдельное слово, и цепочку "
          "из двух, трёх, четырёх или пяти подряд идущих слов.<br>"
