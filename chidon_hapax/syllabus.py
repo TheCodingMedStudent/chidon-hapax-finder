@@ -14,6 +14,7 @@ Accepted, one entry per line or separated by ';':
 from __future__ import annotations
 
 import re
+import unicodedata
 from dataclasses import dataclass, field, field
 
 from .corpus import Corpus, gematria_to_int, int_to_gematria
@@ -108,14 +109,37 @@ def _norm_name(s: str) -> str:
     s = s.strip().lower()
     s = re.sub(r"[\u0591-\u05c7]", "", s)      # points, if someone types them
     s = re.sub(r"[.'\"׳״\-_]", "", s)
+    # strip accents, so Genèse / Genese and Isaías / Isaias both match
+    s = "".join(c for c in unicodedata.normalize("NFD", s)
+                if unicodedata.category(c) != "Mn" or "\u0591" <= c <= "\u05c7")
+    s = unicodedata.normalize("NFC", s)
     s = re.sub(r"\s+", " ", s)
     return s
 
 
 def build_name_index(corpus: Corpus) -> dict:
+    """Every name a book may be typed under.
+
+    Hebrew and English come from the corpus; the other interface languages
+    come from book_names, so someone working in French can write "Josué" and
+    someone in Russian "Судьи". Numbered books also accept the Hebrew letter
+    form ("שמואל א"), a digit ("1 Samuel") and a Roman numeral ("I Samuel").
+    """
+    from .book_names import NAMES as LOCAL_NAMES
     idx = {}
     for i, b in enumerate(corpus.books):
         names = [b["he"], b["en"]] + ALIASES.get(b["osis"], [])
+        for per_language in LOCAL_NAMES.values():
+            local = per_language.get(b["osis"])
+            if local:
+                names.append(local)
+                # "1 Rois" should also answer to "I Rois" and "Rois 1"
+                m = re.match(r"^([12])\s+(.*)$", local)
+                if m:
+                    num, rest = m.groups()
+                    roman = "I" if num == "1" else "II"
+                    names += [f"{roman} {rest}", f"{rest} {num}",
+                              f"{rest} {roman}"]
         # "שמואל א" also as "שמואל א" with the numeral written out
         for name in names:
             idx[_norm_name(name)] = i
