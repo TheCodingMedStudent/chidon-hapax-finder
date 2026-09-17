@@ -21,7 +21,7 @@ from . import (BSD, __author__, __license__, __url__, __version__,
                __year__, numbering, report)
 from .corpus import (USER_CORPUS_PATH, LEVELS, Corpus, corpus_exists,
                      load_corpus)
-from .engine import Options, analyze, find_occurrences
+from .engine import Options, analyze, find_occurrences, occurrence_index
 from .i18n import plural_form, LANGUAGES, current_language, is_rtl, set_language, tr
 from .syllabus import (SyllabusError, collect_verses, describe,
                        parse_syllabus_full)
@@ -963,8 +963,14 @@ class MainWindow(QWidget):
             b.setEnabled(False)
 
         def job(progress):
-            return analyze(corpus, verses, opts, progress=progress,
-                           scope_verses=scope_verses)
+            res = analyze(corpus, verses, opts, progress=progress,
+                          scope_verses=scope_verses)
+            # build the "where else does this occur" index here, in the
+            # worker, so the first row you click is instant rather than
+            # pausing for a second
+            progress(0.97, "Indexing occurrences…")
+            occurrence_index(corpus, opts)
+            return res
 
         def done(res):
             self.result = res

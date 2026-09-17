@@ -191,37 +191,55 @@ def _token_key(corpus: Corpus, v, i_w: int, opts: Options) -> str:
     return normalize(v.words[i_w], opts.level, opts.fold_finals)
 
 
+#: keys for every word of the corpus, per comparison level, plus an index
+#: from a word to the places it occurs. Built once and kept: rebuilding it on
+#: every click is what made selecting a row take half a second.
+_INDEX_CACHE: dict = {}
+
+
+def occurrence_index(corpus: Corpus, opts: Options):
+    """(keys_by_verse, first_word_index) for the chosen comparison level."""
+    key = (id(corpus), opts.level, opts.fold_finals)
+    cached = _INDEX_CACHE.get(key)
+    if cached is not None:
+        return cached
+    keys_by_verse: list = [None] * len(corpus.verses)
+    index: dict = {}
+    for v in corpus.verses:
+        row = [_token_key(corpus, v, i, opts) for i in range(len(v.words))]
+        keys_by_verse[v.idx] = row
+        for i, k in enumerate(row):
+            index.setdefault(k, []).append((v, i))
+    _INDEX_CACHE.clear()          # one level at a time is plenty
+    _INDEX_CACHE[key] = (keys_by_verse, index)
+    return keys_by_verse, index
+
+
 def find_occurrences(corpus: Corpus, positions: list, opts: Options) -> list:
     """Every place in the Tanach where the same word or phrase occurs.
 
     Answers "the report says this appears twice — where is the other one?".
-    Comparison follows the same level the search used, so a root-level hit
-    finds the other forms of that root, not only the identical spelling.
-
-    Returns a list of position-lists, in canonical order, each the same shape
-    as a hit's own positions.
+    Comparison follows the level the search used, so a root-level hit finds
+    the other forms of that root, not only the identical spelling.
     """
-    key = tuple(_token_key(corpus, v, i, opts) for v, i in positions)
-    n = len(key)
+    keys_by_verse, index = occurrence_index(corpus, opts)
+    want = [keys_by_verse[v.idx][i] for v, i in positions]
+    n = len(want)
     if not n:
         return []
-    first = key[0]
     out = []
-    for v in corpus.verses:
-        words = v.words
-        for i in range(len(words)):
-            if _token_key(corpus, v, i, opts) != first:
-                continue
-            if i + n <= len(words):              # inside one verse
-                run = [(v, i + k) for k in range(n)]
-            elif opts.cross_verses:
-                run = _span_across(corpus, v, i, n)
-                if run is None:
-                    continue
-            else:
-                continue
-            if tuple(_token_key(corpus, vv, ii, opts) for vv, ii in run) == key:
-                out.append(run)
+    for v, i in index.get(want[0], ()):
+        row = keys_by_verse[v.idx]
+        if i + n <= len(row):
+            if row[i:i + n] == want:
+                out.append([(v, i + k) for k in range(n)])
+            continue
+        if not opts.cross_verses:
+            continue
+        run = _span_across(corpus, v, i, n)
+        if run and [keys_by_verse[vv.idx][ii] for vv, ii in run] == want:
+            out.append(run)
+    out.sort(key=lambda run: (run[0][0].idx, run[0][1]))
     return out
 
 
