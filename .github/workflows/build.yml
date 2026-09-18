@@ -136,8 +136,49 @@ jobs:
           path: files
       - name: Show what will be published
         run: find files -type f | sort
-      - uses: softprops/action-gh-release@v2
-        with:
-          files: files/**/*
-          draft: true           # review before anyone can download it
-          generate_release_notes: true
+      # Uploaded one at a time with retries rather than by
+      # softprops/action-gh-release, which uploads all three concurrently:
+      # GitHub's asset endpoint answered one of those with an HTML error page,
+      # which failed the whole job after fifteen minutes.
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # reuse the release for this tag if one already exists, so a retry
+          # after a failed run does not trip over itself
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            gh release create "$TAG" \
+              --draft \
+              --generate-notes \
+              --title "$TAG"
+          fi
+
+          mapfile -d '' assets < <(
+            find files -type f \( -name '*.dmg' -o -name '*.zip' \) -print0
+          )
+
+          if [ "${#assets[@]}" -eq 0 ]; then
+            echo "::error::No release assets were found"
+            exit 1
+          fi
+
+          for asset in "${assets[@]}"; do
+            echo "Uploading: $asset"
+            uploaded=false
+            for attempt in 1 2 3 4 5; do
+              if gh release upload "$TAG" "$asset" --clobber; then
+                uploaded=true
+                break
+              fi
+              echo "::warning::Upload failed for '$asset' (attempt $attempt/5)"
+              sleep $((attempt * 15))
+            done
+            if [ "$uploaded" != true ]; then
+              echo "::error::Unable to upload '$asset' after 5 attempts"
+              exit 1
+            fi
+          done
