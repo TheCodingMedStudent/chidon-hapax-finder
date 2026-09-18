@@ -33,10 +33,21 @@ MAX_ROOT_ROWS = 3000
 
 
 def app_icon() -> QIcon:
-    """The window / taskbar icon, at every size the platform may ask for."""
+    """The window / taskbar icon, at every size the platform may ask for.
+
+    macOS is the odd one out: a running app replaces its own Dock icon with
+    whatever it sets here, so this has to be the padded tile used by the
+    bundle's .icns — otherwise the icon is the right size until you launch it
+    and then jumps to full-bleed. Windows and Linux want the artwork edge to
+    edge.
+    """
+    mac = sys.platform == "darwin"
     icon = QIcon()
     for size in (16, 24, 32, 48, 64, 128, 256, 512, 1024):
-        path = paths.resource("icons", f"icon_{size}.png")
+        name = f"mac_{size}.png" if mac else f"icon_{size}.png"
+        path = paths.resource("icons", name)
+        if not os.path.exists(path):                 # mac set is a subset
+            path = paths.resource("icons", f"icon_{size}.png")
         if os.path.exists(path):
             icon.addFile(path, QSize(size, size))
     return icon
