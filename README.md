@@ -19,7 +19,7 @@ python run.py
 ```
 
 That's the only dependency. The Tanach text is bundled
-(`chidon_hapax/data/tanach.json.gz`, 1.5 MB), so it works offline from the first
+(`chidon_hapax/data/tanach.json.gz`, 2.2 MB), so it works offline from the first
 launch. If that file ever goes missing the app shows a **Download the Tanach
 text** button that fetches and rebuilds it (≈20 MB, once).
 
@@ -233,7 +233,9 @@ Both are included here as samples, along with a root-level list.
 | …only my part of it | Whether chapters outside your syllabus are counted. |
 | Compare by | **Root** (dictionary word), **Consonants only** (default — ignores nikkud), **+ nikkud**, or **+ te'amim**. Stricter comparison ⇒ more things count as unique. |
 | Phrase lengths 1–5 | Tick what you want. Each length is a section in the PDF and a tab in the app. |
-| Minimal phrases only | The rule above. Leave it on; the app warns you if you switch it off. |
+| Appears at most | 1 finds true hapaxes; 2 also finds what occurs exactly twice, 3 three times, and so on. Every occurrence inside the syllabus is listed separately, with its own reference. |
+| In phrases, each word occurs ≥ | Keeps only phrases whose words are *all* common, so the phrase is the surprising thing rather than its vocabulary. Applies to phrases of two words and up. |
+| Minimal phrases only | The rule above. Leave it on: without it almost every long phrase is trivially unique. |
 | Across a verse boundary | Lets a phrase run from the end of one verse into the next. Off by default. |
 | Print the full verse | The whole pasuk under each entry with the hapax in bold. Switches the layout to one entry per line, so roughly triples the page count. |
 | Alphabetical index | Appendix of every single-word hapax sorted א→ת with its reference. **This is the one to study from**: read the word, try to recall the place. |
@@ -271,7 +273,7 @@ that he never saw these two verses in any accurate old manuscript. In printed
 mode they are marked with an asterisk, and the rest of the chapter runs two
 verses lower.
 
-Switch with **Verse numbers** in the Report box. The choice is remembered, it
+Switch with **Verse numbers** in the Export box. The choice is remembered, it
 applies to the results table and the PDF alike, and the PDF cover records which
 scheme it used.
 
@@ -291,11 +293,15 @@ clicking a row shows the full verse with the phrase highlighted — then
 ## The PDF
 
 Produced by Qt itself, so Hebrew shaping, nikkud placement and RTL layout are
-correct with no extra library. Cover page with the syllabus and every setting
+correct with no extra library. Title page with the syllabus and every setting
 used, totals per length and per book, then one section per length grouped by
 book and chapter, then the optional index and practice sheet. Single words
 print three to a row and two-word phrases two to a row, filled right-to-left.
 Page numbers in the footer.
+
+The headings and setting names follow the interface language, so a French or
+Russian user gets a French or Russian report, while the Tanach text inside it
+stays Hebrew and right-to-left. Options live in the **Export** box.
 
 ---
 
@@ -312,6 +318,7 @@ chidon_hapax/
     sections.py               the canonical divisions of the Tanach
     paths.py                  file locations, source or frozen bundle
     help_text.py              the in-app guide, six languages
+    book_names.py             book names in the five non-Hebrew languages
     icons/                    app icon, .ico and .icns included
     report.py                 HTML document, PDF/CSV export
     i18n.py                   the six interface languages
@@ -321,6 +328,11 @@ chidon_hapax/
 examples/
     chidon_5787.txt           the full תשפ״ז syllabus
     yehoshua.txt, neviim_rishonim.txt
+packaging/
+    dmg-background.png        the window art for the macOS disk image
+chidon_hapax.spec             PyInstaller build recipe
+version_info.txt              Windows file properties
+.github/workflows/build.yml   builds all three apps and publishes a release
 ```
 
 ## Text
@@ -484,6 +496,15 @@ PyInstaller cannot fuse a universal app out of single-architecture libraries, so
 An Intel build does run on Apple silicon through Rosetta 2, so a single Intel
 build would cover every Mac — but users without Rosetta get an install prompt at
 first launch. Publishing both and labelling them clearly is kinder.
+
+### The icon
+
+Two shapes from one drawing. Windows fills the whole canvas, so `app.ico` and
+the in-app window icon use the artwork edge to edge. macOS expects the icon to
+sit inside a rounded tile occupying 824 of 1024 pixels, with transparent margin
+and a soft shadow, so that every icon in the Dock appears the same size — a
+full-bleed icon there looks conspicuously larger than its neighbours. `app.icns`
+is built to that proportion.
 
 ### The disk image
 

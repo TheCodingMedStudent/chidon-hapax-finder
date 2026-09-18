@@ -274,8 +274,11 @@ S = STRINGS = {
               "этим фильтром никогда не отсекаются.",
     },
     # ---------------------------------------------------------- report
-    "group.report": {"en": "Report", "he": "הפלט", "fr": "Rapport",
-                     "es": "Informe", "pt": "Relatório", "ru": "Отчёт"},
+    # named to match the guide's "Exporting" section: the box is where you
+    # choose what the PDF, HTML or CSV will contain
+    "group.report": {"en": "Export", "he": "ייצוא", "fr": "Exportation",
+                     "es": "Exportación", "pt": "Exportação",
+                     "ru": "Экспорт"},
     "label.title": {"en": "Title:", "he": "כותרת:", "fr": "Titre :",
                     "es": "Título:", "pt": "Título:", "ru": "Заголовок:"},
     "ph.title": {"en": "title for the PDF (optional)",
